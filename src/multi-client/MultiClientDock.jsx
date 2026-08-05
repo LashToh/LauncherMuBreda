@@ -28,9 +28,10 @@ export default function MultiClientDock() {
     refresh({ withThumbs: true });
     const timer = setInterval(() => {
       tickRef.current += 1;
-      // Thumbs are expensive; refresh them less often.
-      refresh({ withThumbs: tickRef.current % 4 === 0 });
-    }, 2500);
+      // Keep trying thumbs often until they appear; then every other tick.
+      const needsThumbs = clients.some((c) => !c.thumbUrl) || tickRef.current % 2 === 0;
+      refresh({ withThumbs: needsThumbs });
+    }, 2200);
     return () => clearInterval(timer);
   }, []);
 

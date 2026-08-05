@@ -274,9 +274,25 @@ export async function restoreMuClients(hwnds = []) {
 }
 
 function characterLabel(title) {
-  const nameMatch = title.match(/name\s*:\s*([^|]+)/i);
-  if (nameMatch) return nameMatch[1].trim();
-  return shortenTitle(title);
+  const raw = String(title || '').replace(/\s+/g, ' ').trim();
+  const patterns = [
+    /name\s*:\s*([^|:]+)/i,
+    /character\s*:\s*([^|:]+)/i,
+    /char\s*:\s*([^|:]+)/i,
+    /\|\|\s*([^|]+?)\s*\|\|/i,
+    /-\s*([^-|]+)$/i,
+  ];
+  for (const pattern of patterns) {
+    const match = raw.match(pattern);
+    if (!match) continue;
+    const value = match[1].trim();
+    if (value && !/^(mu|main|mubreda|breda)$/i.test(value)) return value;
+  }
+
+  // Prefer a token that doesn't look like the client/process name
+  const parts = raw.split(/[|:\-–]/g).map((p) => p.trim()).filter(Boolean);
+  const named = parts.find((p) => !/^(mu|main|mubreda|breda|argmus|name|level|resets)$/i.test(p));
+  return named || shortenTitle(raw);
 }
 
 function shortenTitle(title) {
@@ -288,7 +304,8 @@ function shortenTitle(title) {
 function initialFromTitle(title) {
   const label = characterLabel(title);
   const cleaned = label.replace(/[^a-zA-Z0-9À-ÿ]/g, '').trim();
-  return (cleaned[0] || 'M').toUpperCase();
+  if (!cleaned || /^(mu|main)$/i.test(cleaned)) return '•';
+  return cleaned[0].toUpperCase();
 }
 
 function colorFromId(id) {

@@ -10,11 +10,6 @@ function thumbsDir(gameRoot = getGameRoot()) {
   return path.join(getLauncherDataDir(gameRoot), 'thumbs');
 }
 
-/**
- * Capture visible window contents via screen BitBlt (works with DirectX MU clients).
- * Crops a centered square where the character usually is.
- * Returns JSON: { ok: true } or { ok: false, reason }
- */
 function captureScript(hwnd, outPath, size = 96) {
   const safeOut = outPath.replace(/'/g, "''");
   return `
@@ -28,78 +23,117 @@ public class MuThumb {
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hwnd, IntPtr hdcBlt, int nFlags);
+  [DllImport("user32.dll")] public static extern IntPtr GetWindowDC(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+  [DllImport("gdi32.dll")] public static extern bool BitBlt(IntPtr hdcDest, int xDest, int yDest, int w, int h, IntPtr hdcSrc, int xSrc, int ySrc, int rop);
   [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out RECT pvAttribute, int cbAttribute);
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+  public const int SRCCOPY = 0x00CC0020;
 }
 "@
 
+function Test-NotTooDark([System.Drawing.Bitmap]$bmp) {
+  $sample = 0; $dark = 0
+  $step = [Math]::Max(1, [int]($bmp.Width / 6))
+  for ($y = 2; $y -lt $bmp.Height; $y += $step) {
+    for ($x = 2; $x -lt $bmp.Width; $x += $step) {
+      $c = $bmp.GetPixel($x, $y)
+      $sample++
+      if (($c.R + $c.G + $c.B) -lt 40) { $dark++ }
+    }
+  }
+  if ($sample -eq 0) { return $false }
+  return (($dark / $sample) -lt 0.9)
+}
+
 $h = [IntPtr]${Number(hwnd)}
-if (-not [MuThumb]::IsWindowVisible($h)) { @{ ok = $false; reason = 'hidden' } | ConvertTo-Json -Compress; return }
-if ([MuThumb]::IsIconic($h)) { @{ ok = $false; reason = 'minimized' } | ConvertTo-Json -Compress; return }
+if (-not [MuThumb]::IsWindowVisible($h)) { @{ ok=$false; reason='hidden' } | ConvertTo-Json -Compress; return }
+if ([MuThumb]::IsIconic($h)) { @{ ok=$false; reason='minimized' } | ConvertTo-Json -Compress; return }
 
 $rect = New-Object MuThumb+RECT
-# DWMWA_EXTENDED_FRAME_BOUNDS = 9 (better for DPI / shadows)
 $dwm = [MuThumb]::DwmGetWindowAttribute($h, 9, [ref]$rect, [System.Runtime.InteropServices.Marshal]::SizeOf($rect))
 if ($dwm -ne 0) { [void][MuThumb]::GetWindowRect($h, [ref]$rect) }
 
 $winW = [Math]::Max(1, $rect.Right - $rect.Left)
 $winH = [Math]::Max(1, $rect.Bottom - $rect.Top)
-
-# Center crop biased a bit upward (character torso/head in MU)
-$side = [int]([Math]::Min($winW, $winH) * 0.42)
-if ($side -lt 64) { $side = [Math]::Min($winW, $winH) }
+$side = [int]([Math]::Min($winW, $winH) * 0.45)
+if ($side -lt 48) { $side = [Math]::Min($winW, $winH) }
 $cx = [int]($rect.Left + $winW / 2)
-$cy = [int]($rect.Top + $winH * 0.42)
-$srcX = [Math]::Max($rect.Left, $cx - [int]($side / 2))
-$srcY = [Math]::Max($rect.Top, $cy - [int]($side / 2))
+$cy = [int]($rect.Top + $winH * 0.40)
+$srcX = [Math]::Max($rect.Left, $cx - [int]($side/2))
+$srcY = [Math]::Max($rect.Top, $cy - [int]($side/2))
 if ($srcX + $side -gt $rect.Right) { $srcX = $rect.Right - $side }
 if ($srcY + $side -gt $rect.Bottom) { $srcY = $rect.Bottom - $side }
 
 $size = ${Number(size)}
-$thumb = New-Object System.Drawing.Bitmap $size, $size
-$tg = [System.Drawing.Graphics]::FromImage($thumb)
-$tg.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-$tg.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
-$tg.Clear([System.Drawing.Color]::FromArgb(18,18,18))
+$thumb = $null
 
-$ok = $false
+# 1) Screen BitBlt (best for DX when window is visible on a display)
 try {
-  # Screen capture — works for DirectX games when the window is visible
-  $tg.CopyFromScreen($srcX, $srcY, 0, 0, (New-Object System.Drawing.Size $side, $side))
-  $ok = $true
-} catch {
-  $ok = $false
-}
-
-# Fallback PrintWindow if screen copy failed
-if (-not $ok) {
-  $bmp = New-Object System.Drawing.Bitmap $winW, $winH
-  $g = [System.Drawing.Graphics]::FromImage($bmp)
-  $hdc = $g.GetHdc()
-  [void][MuThumb]::PrintWindow($h, $hdc, 2)
-  $g.ReleaseHdc($hdc)
+  $tmp = New-Object System.Drawing.Bitmap $side, $side
+  $g = [System.Drawing.Graphics]::FromImage($tmp)
+  $g.CopyFromScreen($srcX, $srcY, 0, 0, (New-Object System.Drawing.Size $side, $side))
   $g.Dispose()
-  $tg.DrawImage($bmp, (New-Object System.Drawing.Rectangle 0,0,$size,$size), (New-Object System.Drawing.Rectangle ($srcX-$rect.Left), ($srcY-$rect.Top), $side, $side), [System.Drawing.GraphicsUnit]::Pixel)
-  $bmp.Dispose()
+  if (Test-NotTooDark $tmp) {
+    $thumb = New-Object System.Drawing.Bitmap $size, $size
+    $tg = [System.Drawing.Graphics]::FromImage($thumb)
+    $tg.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $tg.DrawImage($tmp, 0, 0, $size, $size)
+    $tg.Dispose()
+  }
+  $tmp.Dispose()
+} catch {}
+
+# 2) Window DC BitBlt
+if ($null -eq $thumb) {
+  try {
+    $hdcSrc = [MuThumb]::GetWindowDC($h)
+    if ($hdcSrc -ne [IntPtr]::Zero) {
+      $tmp = New-Object System.Drawing.Bitmap $side, $side
+      $g = [System.Drawing.Graphics]::FromImage($tmp)
+      $hdcDst = $g.GetHdc()
+      $localX = $srcX - $rect.Left
+      $localY = $srcY - $rect.Top
+      [void][MuThumb]::BitBlt($hdcDst, 0, 0, $side, $side, $hdcSrc, $localX, $localY, [MuThumb]::SRCCOPY)
+      $g.ReleaseHdc($hdcDst)
+      $g.Dispose()
+      [void][MuThumb]::ReleaseDC($h, $hdcSrc)
+      if (Test-NotTooDark $tmp) {
+        $thumb = New-Object System.Drawing.Bitmap $size, $size
+        $tg = [System.Drawing.Graphics]::FromImage($thumb)
+        $tg.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+        $tg.DrawImage($tmp, 0, 0, $size, $size)
+        $tg.Dispose()
+      }
+      $tmp.Dispose()
+    }
+  } catch {}
 }
 
-# Reject near-black frames (failed DX capture)
-$sample = 0
-$dark = 0
-for ($i = 0; $i -lt 36; $i++) {
-  $px = ($i % 6) * [int]($size / 6) + 2
-  $py = [int]($i / 6) * [int]($size / 6) + 2
-  if ($px -ge $size) { $px = $size - 1 }
-  if ($py -ge $size) { $py = $size - 1 }
-  $c = $thumb.GetPixel($px, $py)
-  $sample++
-  if (($c.R + $c.G + $c.B) -lt 45) { $dark++ }
+# 3) PrintWindow full content
+if ($null -eq $thumb) {
+  try {
+    $bmp = New-Object System.Drawing.Bitmap $winW, $winH
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $hdc = $g.GetHdc()
+    [void][MuThumb]::PrintWindow($h, $hdc, 2)
+    $g.ReleaseHdc($hdc)
+    $g.Dispose()
+    $crop = $bmp.Clone((New-Object System.Drawing.Rectangle ($srcX-$rect.Left), ($srcY-$rect.Top), $side, $side), $bmp.PixelFormat)
+    $bmp.Dispose()
+    if (Test-NotTooDark $crop) {
+      $thumb = New-Object System.Drawing.Bitmap $size, $size
+      $tg = [System.Drawing.Graphics]::FromImage($thumb)
+      $tg.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+      $tg.DrawImage($crop, 0, 0, $size, $size)
+      $tg.Dispose()
+    }
+    $crop.Dispose()
+  } catch {}
 }
-$tg.Dispose()
 
-if ($sample -gt 0 -and ($dark / $sample) -gt 0.85) {
-  $thumb.Dispose()
-  @{ ok = $false; reason = 'too-dark' } | ConvertTo-Json -Compress
+if ($null -eq $thumb) {
+  @{ ok = $false; reason = 'capture-failed' } | ConvertTo-Json -Compress
   return
 }
 
@@ -113,20 +147,15 @@ async function runPowerShell(script) {
   const { stdout } = await execFileAsync(
     'powershell.exe',
     ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script],
-    { windowsHide: true, maxBuffer: 2 * 1024 * 1024 },
+    { windowsHide: true, maxBuffer: 4 * 1024 * 1024 },
   );
   return stdout.trim();
-}
-
-function fileUrl(filePath) {
-  const stamp = fs.statSync(filePath).mtimeMs;
-  return `file://${filePath.replace(/\\/g, '/')}?t=${stamp}`;
 }
 
 export async function captureClientThumbnail(
   hwnd,
   gameRoot = getGameRoot(),
-  { maxAgeMs = 2000 } = {},
+  { maxAgeMs = 1800 } = {},
 ) {
   if (process.platform !== 'win32') return null;
   const dir = thumbsDir(gameRoot);
@@ -136,39 +165,37 @@ export async function captureClientThumbnail(
   const freshEnough =
     fs.existsSync(filePath) && Date.now() - fs.statSync(filePath).mtimeMs < maxAgeMs;
 
-  if (freshEnough) return fileUrl(filePath);
-
-  try {
-    const raw = await runPowerShell(captureScript(hwnd, filePath, 96));
-    let parsed = null;
+  if (!freshEnough) {
     try {
-      parsed = JSON.parse(raw.split('\n').filter(Boolean).pop() || '{}');
-    } catch {
-      parsed = null;
-    }
-
-    if (parsed?.ok && fs.existsSync(filePath)) {
-      return fileUrl(filePath);
-    }
-
-    // Remove failed/black frames so UI falls back to initials
-    if (fs.existsSync(filePath) && parsed && parsed.ok === false) {
+      const raw = await runPowerShell(captureScript(hwnd, filePath, 96));
+      const line = raw.split(/\r?\n/).filter(Boolean).pop() || '{}';
+      let parsed = {};
       try {
-        fs.unlinkSync(filePath);
+        parsed = JSON.parse(line);
       } catch {
-        // ignore
+        parsed = {};
       }
+      if (!parsed.ok && fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch {
+          // ignore
+        }
+      }
+    } catch {
+      // ignore
     }
-  } catch {
-    // ignore
   }
 
-  return fs.existsSync(filePath) ? fileUrl(filePath) : null;
+  if (!fs.existsSync(filePath)) return null;
+
+  // data URL is more reliable than file:// inside Electron
+  const base64 = fs.readFileSync(filePath).toString('base64');
+  return `data:image/png;base64,${base64}`;
 }
 
 export async function attachThumbnails(clients, gameRoot = getGameRoot()) {
   const enriched = [];
-  // Capture in parallel (bounded) for snappier dock updates
   const chunkSize = 2;
   for (let i = 0; i < clients.length; i += chunkSize) {
     const chunk = clients.slice(i, i + chunkSize);
