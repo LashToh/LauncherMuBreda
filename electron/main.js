@@ -10,6 +10,8 @@ import {
 } from './configStore.js';
 import { loadGameSettings, saveGameSettings } from './gameSettings.js';
 import { launchGame } from './launcher.js';
+import { setCharacterClass } from './characterCache.js';
+import { CLASS_PICK_LIST, classIconUrl, iconForGroup } from './classIcons.js';
 import { saveDockState } from './dockStore.js';
 import {
   closeMultiClientWindow,
@@ -199,14 +201,17 @@ function registerIpc() {
     return { ok: true };
   });
 
-  ipcMain.handle('clients:list', async (_e, opts = {}) => {
-    const withThumbs = Boolean(opts?.withThumbs);
+  ipcMain.handle('clients:list', async () => {
     if (listInFlight) {
       const pending = await listInFlight;
-      return { ...pending, collapsed: getDockCollapsed() };
+      return {
+        ...pending,
+        collapsed: getDockCollapsed(),
+        classOptions: CLASS_PICK_LIST,
+      };
     }
 
-    listInFlight = listMuClients({ withThumbs })
+    listInFlight = listMuClients()
       .then((result) => {
         lastClientsCache = result.clients || [];
         lastKnownHwnds = lastClientsCache.map((c) => c.hwnd);
@@ -223,7 +228,32 @@ function registerIpc() {
     return {
       ...result,
       collapsed: getDockCollapsed(),
+      classOptions: CLASS_PICK_LIST,
     };
+  });
+
+  ipcMain.handle('clients:set-class', async (_e, payload = {}) => {
+    const name = payload.name || payload.label;
+    const group = Number(payload.group);
+    if (!name || !Number.isFinite(group)) {
+      return { ok: false, message: 'Invalid class payload' };
+    }
+    const saved = setCharacterClass(name, { group });
+    const icon = iconForGroup(group);
+    // refresh cache entry in memory
+    lastClientsCache = lastClientsCache.map((client) => {
+      if (String(client.label).toLowerCase() !== String(name).toLowerCase()) {
+        return client;
+      }
+      return {
+        ...client,
+        classFile: icon.file,
+        classLabel: icon.label,
+        classGroup: icon.group,
+        classIconUrl: classIconUrl(icon.file),
+      };
+    });
+    return { ok: true, saved, clients: lastClientsCache };
   });
 
   ipcMain.handle('clients:focus', async (_e, hwnd) => focusMuClient(hwnd));

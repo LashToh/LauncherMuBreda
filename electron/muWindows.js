@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { loadLauncherConfig } from './configStore.js';
+import { resolveClientAvatar } from './classLookup.js';
 import { applyClientOrder, loadDockState } from './dockStore.js';
-import { attachThumbnails } from './thumbnails.js';
 import { getGameRoot } from './paths.js';
 
 const execFileAsync = promisify(execFile);
@@ -198,7 +198,7 @@ function matchesFilters(item, config, gameRoot) {
   return /breda/i.test(haystack);
 }
 
-export async function listMuClients({ withThumbs = true } = {}) {
+export async function listMuClients() {
   if (process.platform !== 'win32') {
     return { ok: true, clients: [], skipped: true };
   }
@@ -231,9 +231,13 @@ export async function listMuClients({ withThumbs = true } = {}) {
     const dock = loadDockState(gameRoot);
     clients = applyClientOrder(clients, dock.order || []);
 
-    if (withThumbs) {
-      clients = await attachThumbnails(clients, gameRoot);
-    }
+    // WebEngine-style class avatars (no live screenshots)
+    clients = await Promise.all(
+      clients.map(async (client) => {
+        const avatar = await resolveClientAvatar(client, gameRoot);
+        return { ...client, ...avatar, thumbUrl: null };
+      }),
+    );
 
     return { ok: true, clients, gameRoot };
   } catch (error) {
