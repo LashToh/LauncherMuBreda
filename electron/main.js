@@ -36,6 +36,8 @@ const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 let mainWindow = null;
 let quitting = false;
 let lastKnownHwnds = [];
+let lastClientsCache = [];
+let listInFlight = null;
 
 function getAppIconPath() {
   const candidates = [
@@ -187,10 +189,27 @@ function registerIpc() {
     return { ok: true };
   });
 
-  ipcMain.handle('clients:list', async () => {
-    const result = await listMuClients({ withThumbs: true });
-    lastKnownHwnds = (result.clients || []).map((c) => c.hwnd);
-    syncDockSize(result.clients?.length || 0);
+  ipcMain.handle('clients:list', async (_e, opts = {}) => {
+    const withThumbs = Boolean(opts?.withThumbs);
+    if (listInFlight) {
+      const pending = await listInFlight;
+      return { ...pending, collapsed: getDockCollapsed() };
+    }
+
+    listInFlight = listMuClients({ withThumbs })
+      .then((result) => {
+        lastClientsCache = result.clients || [];
+        lastKnownHwnds = lastClientsCache.map((c) => c.hwnd);
+        if (!getDockCollapsed()) {
+          syncDockSize(lastClientsCache.length);
+        }
+        return result;
+      })
+      .finally(() => {
+        listInFlight = null;
+      });
+
+    const result = await listInFlight;
     return {
       ...result,
       collapsed: getDockCollapsed(),
@@ -209,23 +228,39 @@ function registerIpc() {
   });
 
   ipcMain.handle('clients:minimize-all', async () => {
-    const listed = await listMuClients({ withThumbs: false });
-    const hwnds = (listed.clients || []).map((c) => c.hwnd);
-    lastKnownHwnds = hwnds;
+    // Collapse UI immediately; act on cached hwnds (no re-scan).
+    setDockCollapsed(true);
+    syncDockSize(lastKnownHwnds.length || lastClientsCache.length);
+
+    let hwnds = lastKnownHwnds;
+    if (!hwnds.length) {
+      const listed = await listMuClients({ withThumbs: false });
+      hwnds = (listed.clients || []).map((c) => c.hwnd);
+      lastKnownHwnds = hwnds;
+      lastClientsCache = listed.clients || [];
+    }
+
     const result = await minimizeMuClients(hwnds);
-    if (result.ok) setDockCollapsed(true);
-    syncDockSize(hwnds.length);
-    return { ...result, collapsed: true, clients: listed.clients || [] };
+    return {
+      ...result,
+      collapsed: true,
+      clients: lastClientsCache,
+    };
   });
 
   ipcMain.handle('clients:restore-all', async () => {
-    const listed = await listMuClients({ withThumbs: false });
-    const hwnds = (listed.clients || []).map((c) => c.hwnd);
-    const target = hwnds.length ? hwnds : lastKnownHwnds;
+    setDockCollapsed(false);
+    const target = lastKnownHwnds.length
+      ? lastKnownHwnds
+      : lastClientsCache.map((c) => c.hwnd);
+    syncDockSize(target.length || lastClientsCache.length);
+
     const result = await restoreMuClients(target);
-    if (result.ok) setDockCollapsed(false);
-    syncDockSize(target.length);
-    return { ...result, collapsed: false };
+    return {
+      ...result,
+      collapsed: false,
+      clients: lastClientsCache,
+    };
   });
 
   ipcMain.handle('clients:reorder', async (_e, orderedKeys = []) => {

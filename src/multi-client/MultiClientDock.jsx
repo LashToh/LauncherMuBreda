@@ -12,17 +12,25 @@ export default function MultiClientDock() {
   const [draggingHwnd, setDraggingHwnd] = useState(null);
   const dragMoved = useRef(false);
   const arrowDrag = useRef({ active: false, moved: false, x: 0, y: 0 });
+  const tickRef = useRef(0);
+  const busyToggle = useRef(false);
 
-  async function refresh() {
+  async function refresh({ withThumbs = false } = {}) {
     if (!window.mubreda?.listClients) return;
-    const result = await window.mubreda.listClients();
+    const result = await window.mubreda.listClients({ withThumbs });
     setClients(result.clients || []);
-    setCollapsed(Boolean(result.collapsed));
+    if (!busyToggle.current) {
+      setCollapsed(Boolean(result.collapsed));
+    }
   }
 
   useEffect(() => {
-    refresh();
-    const timer = setInterval(refresh, 1800);
+    refresh({ withThumbs: true });
+    const timer = setInterval(() => {
+      tickRef.current += 1;
+      // Thumbs are expensive; refresh them less often.
+      refresh({ withThumbs: tickRef.current % 4 === 0 });
+    }, 2500);
     return () => clearInterval(timer);
   }, []);
 
@@ -32,27 +40,33 @@ export default function MultiClientDock() {
       return;
     }
     await window.mubreda?.focusClient(hwnd);
-    refresh();
   }
 
   async function onLaunch() {
     await window.mubreda?.launchClient();
-    setTimeout(refresh, 800);
+    setTimeout(() => refresh({ withThumbs: true }), 1000);
   }
 
-  async function onToggle() {
+  function onToggle() {
     if (arrowDrag.current.moved) {
       arrowDrag.current.moved = false;
       return;
     }
-    if (collapsed) {
-      await window.mubreda?.restoreAllClients();
-      setCollapsed(false);
-    } else {
-      await window.mubreda?.minimizeAllClients();
-      setCollapsed(true);
-    }
-    refresh();
+    if (busyToggle.current) return;
+
+    const nextCollapsed = !collapsed;
+    busyToggle.current = true;
+    setCollapsed(nextCollapsed); // UI responds instantly
+
+    const action = nextCollapsed
+      ? window.mubreda?.minimizeAllClients()
+      : window.mubreda?.restoreAllClients();
+
+    Promise.resolve(action)
+      .catch(() => {})
+      .finally(() => {
+        busyToggle.current = false;
+      });
   }
 
   function onAvatarDragStart(event, hwnd) {
@@ -94,7 +108,7 @@ export default function MultiClientDock() {
     event.currentTarget.setPointerCapture?.(event.pointerId);
   }
 
-  async function onArrowPointerMove(event) {
+  function onArrowPointerMove(event) {
     if (!arrowDrag.current.active) return;
     const dx = event.screenX - arrowDrag.current.x;
     const dy = event.screenY - arrowDrag.current.y;
@@ -102,7 +116,7 @@ export default function MultiClientDock() {
     arrowDrag.current.moved = true;
     arrowDrag.current.x = event.screenX;
     arrowDrag.current.y = event.screenY;
-    await window.mubreda?.moveDockBy(dx, dy);
+    window.mubreda?.moveDockBy(dx, dy);
   }
 
   function onArrowPointerUp(event) {

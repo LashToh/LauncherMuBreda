@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld('mubreda', {
   openExternal: (url) => ipcRenderer.invoke('shell:open', url),
   windowMinimize: () => ipcRenderer.invoke('window:minimize'),
   windowClose: () => ipcRenderer.invoke('window:close'),
-  listClients: () => ipcRenderer.invoke('clients:list'),
+  listClients: (opts) => ipcRenderer.invoke('clients:list', opts || {}),
   focusClient: (hwnd) => ipcRenderer.invoke('clients:focus', hwnd),
   launchClient: () => ipcRenderer.invoke('clients:launch'),
   minimizeAllClients: () => ipcRenderer.invoke('clients:minimize-all'),
