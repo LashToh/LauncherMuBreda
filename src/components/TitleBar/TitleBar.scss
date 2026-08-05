@@ -11,26 +11,9 @@
   background: linear-gradient(180deg, rgba(9, 9, 9, 0.92), rgba(9, 9, 9, 0.35));
 
   &__drag {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
     flex: 1;
     height: 100%;
     -webkit-app-region: drag;
-  }
-
-  &__mark {
-    width: 22px;
-    height: 22px;
-    object-fit: contain;
-  }
-
-  &__title {
-    font-family: $font-display;
-    font-size: 0.78rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: rgba(240, 208, 138, 0.85);
   }
 
   &__controls {
