@@ -11,6 +11,12 @@ contextBridge.exposeInMainWorld('mubreda', {
   openExternal: (url) => ipcRenderer.invoke('shell:open', url),
   windowMinimize: () => ipcRenderer.invoke('window:minimize'),
   windowClose: () => ipcRenderer.invoke('window:close'),
+  listClients: () => ipcRenderer.invoke('clients:list'),
+  focusClient: (hwnd) => ipcRenderer.invoke('clients:focus', hwnd),
+  launchClient: () => ipcRenderer.invoke('clients:launch'),
+  minimizeAllClients: () => ipcRenderer.invoke('clients:minimize-all'),
+  restoreAllClients: () => ipcRenderer.invoke('clients:restore-all'),
+  ensureDock: () => ipcRenderer.invoke('dock:ensure'),
   onUpdateProgress: (callback) => {
     const handler = (_event, payload) => callback(payload);
     ipcRenderer.on('update:progress', handler);

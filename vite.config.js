@@ -10,6 +10,12 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        multiclient: path.resolve(__dirname, 'multi-client.html'),
+      },
+    },
   },
   resolve: {
     alias: {

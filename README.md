@@ -11,8 +11,10 @@ Visual identity matches [CMSMuBreda](https://github.com/LashToh/CMSMuBreda).
 - Settings: sound, music, resolution, window mode
 - Language buttons **ES / EN / PT** (launcher UI + game `LauncherOption.if`)
 - News + server status from `https://api.mubreda.net`
-- Social links + Donate (opens website)
+- Social links (website / Discord / Instagram / Facebook)
 - Client auto-update (Play still allowed if API is down)
+- Minimize/close sends launcher to **system tray**
+- Multi-client dock: focus open `main.exe` windows, `+` new client, collapse/restore all
 
 ## Layout on the client
 

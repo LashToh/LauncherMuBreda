@@ -10,7 +10,21 @@ import {
 } from './configStore.js';
 import { loadGameSettings, saveGameSettings } from './gameSettings.js';
 import { launchGame } from './launcher.js';
+import {
+  createMultiClientWindow,
+  getDockCollapsed,
+  setDockCollapsed,
+  showMultiClientWindow,
+  syncDockSize,
+} from './multiClientWindow.js';
+import {
+  focusMuClient,
+  listMuClients,
+  minimizeMuClients,
+  restoreMuClients,
+} from './muWindows.js';
 import { getGameRoot, getLauncherDataDir, ensureDir } from './paths.js';
+import { createTray, destroyTray, hideToTray } from './tray.js';
 import { applyUpdate, checkForUpdates } from './updater.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,6 +32,8 @@ const __dirname = path.dirname(__filename);
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 let mainWindow = null;
+let quitting = false;
+let lastKnownHwnds = [];
 
 function getAppIconPath() {
   const candidates = [
@@ -25,6 +41,15 @@ function getAppIconPath() {
     path.join(__dirname, '..', 'public', 'assets', 'icon.ico'),
   ];
   return candidates.find((candidate) => fs.existsSync(candidate));
+}
+
+function showLauncher() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createWindow();
+    return;
+  }
+  mainWindow.show();
+  mainWindow.focus();
 }
 
 function createWindow() {
@@ -43,7 +68,6 @@ function createWindow() {
     show: false,
     icon: getAppIconPath(),
     webPreferences: {
-      // CommonJS preload — ESM preload fails silently with "type": "module"
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
@@ -53,11 +77,25 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => mainWindow?.show());
 
+  mainWindow.on('close', (event) => {
+    if (quitting) return;
+    event.preventDefault();
+    hideToTray(mainWindow);
+  });
+
   if (isDev) {
     mainWindow.loadURL('http://127.0.0.1:5173');
   } else {
     mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }
+}
+
+function ensureDock() {
+  createMultiClientWindow({
+    isDev,
+    icon: getAppIconPath(),
+  });
+  showMultiClientWindow();
 }
 
 function registerIpc() {
@@ -83,7 +121,14 @@ function registerIpc() {
   ipcMain.handle('settings:save', async (_e, partial) => saveGameSettings(partial || {}));
   ipcMain.handle('config:save', async (_e, partial) => saveLauncherConfig(partial || {}));
 
-  ipcMain.handle('game:launch', async () => launchGame());
+  ipcMain.handle('game:launch', async () => {
+    const result = launchGame();
+    if (result.ok) {
+      ensureDock();
+      setDockCollapsed(false);
+    }
+    return result;
+  });
 
   ipcMain.handle('update:check', async () => checkForUpdates());
   ipcMain.handle('update:apply', async (event) => {
@@ -122,28 +167,103 @@ function registerIpc() {
 
   ipcMain.handle('window:minimize', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    if (win === mainWindow || win?.id === mainWindow?.id) {
+      hideToTray(mainWindow);
+      return { ok: true, tray: true };
+    }
     win?.minimize();
     return { ok: true };
   });
 
   ipcMain.handle('window:close', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    if (win === mainWindow || win?.id === mainWindow?.id) {
+      hideToTray(mainWindow);
+      return { ok: true, tray: true };
+    }
     win?.close();
     return { ok: true };
+  });
+
+  ipcMain.handle('clients:list', async () => {
+    const result = await listMuClients();
+    lastKnownHwnds = (result.clients || []).map((c) => c.hwnd);
+    syncDockSize(result.clients?.length || 0);
+    return {
+      ...result,
+      collapsed: getDockCollapsed(),
+    };
+  });
+
+  ipcMain.handle('clients:focus', async (_e, hwnd) => focusMuClient(hwnd));
+
+  ipcMain.handle('clients:launch', async () => {
+    const result = launchGame();
+    if (result.ok) {
+      ensureDock();
+      setDockCollapsed(false);
+    }
+    return result;
+  });
+
+  ipcMain.handle('clients:minimize-all', async () => {
+    const listed = await listMuClients();
+    const hwnds = (listed.clients || []).map((c) => c.hwnd);
+    lastKnownHwnds = hwnds;
+    const result = await minimizeMuClients(hwnds);
+    if (result.ok) setDockCollapsed(true);
+    syncDockSize(hwnds.length);
+    return { ...result, collapsed: true, clients: listed.clients || [] };
+  });
+
+  ipcMain.handle('clients:restore-all', async () => {
+    const listed = await listMuClients();
+    const hwnds = (listed.clients || []).map((c) => c.hwnd);
+    const target = hwnds.length ? hwnds : lastKnownHwnds;
+    const result = await restoreMuClients(target);
+    if (result.ok) setDockCollapsed(false);
+    syncDockSize(target.length);
+    return { ...result, collapsed: false };
+  });
+
+  ipcMain.handle('dock:ensure', async () => {
+    ensureDock();
+    return { ok: true, collapsed: getDockCollapsed() };
   });
 }
 
 app.whenReady().then(() => {
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('net.mubreda.launcher');
+  }
+
   ensureDir(getLauncherDataDir());
   loadLauncherConfig();
   registerIpc();
   createWindow();
 
+  createTray({
+    onShow: () => showLauncher(),
+    onQuit: () => {
+      quitting = true;
+      destroyTray();
+      app.quit();
+    },
+  });
+
+  // Keep dock available for multi-client usage
+  ensureDock();
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    else showLauncher();
   });
 });
 
+app.on('before-quit', () => {
+  quitting = true;
+});
+
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  // Keep process alive for tray + multi-client dock.
 });
