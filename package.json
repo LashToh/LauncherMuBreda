@@ -19,11 +19,14 @@
     "appId": "net.mubreda.launcher",
     "productName": "MU Breda Launcher",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
+    "icon": "build/icon.ico",
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "build/icon.ico",
       "package.json"
     ],
     "win": {
@@ -31,7 +34,7 @@
         "portable",
         "nsis"
       ],
-      "icon": "public/assets/icon.ico",
+      "icon": "build/icon.ico",
       "artifactName": "MuBreda-Launcher-${version}.${ext}"
     },
     "portable": {

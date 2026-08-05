@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_CONFIG, RESOLUTIONS } from './defaults.js';
@@ -18,6 +19,14 @@ const __dirname = path.dirname(__filename);
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 let mainWindow = null;
 
+function getAppIconPath() {
+  const candidates = [
+    path.join(__dirname, '..', 'build', 'icon.ico'),
+    path.join(__dirname, '..', 'public', 'assets', 'icon.ico'),
+  ];
+  return candidates.find((candidate) => fs.existsSync(candidate));
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1100,
@@ -32,6 +41,7 @@ function createWindow() {
     frame: false,
     backgroundColor: '#090909',
     show: false,
+    icon: getAppIconPath(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
