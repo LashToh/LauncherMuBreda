@@ -43,7 +43,8 @@ function createWindow() {
     show: false,
     icon: getAppIconPath(),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      // CommonJS preload — ESM preload fails silently with "type": "module"
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -119,8 +120,17 @@ function registerIpc() {
     }
   });
 
-  ipcMain.on('window:minimize', () => mainWindow?.minimize());
-  ipcMain.on('window:close', () => mainWindow?.close());
+  ipcMain.handle('window:minimize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    win?.minimize();
+    return { ok: true };
+  });
+
+  ipcMain.handle('window:close', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    win?.close();
+    return { ok: true };
+  });
 }
 
 app.whenReady().then(() => {

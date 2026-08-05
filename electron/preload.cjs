@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('mubreda', {
   getBootstrap: () => ipcRenderer.invoke('bootstrap:get'),
@@ -9,8 +9,8 @@ contextBridge.exposeInMainWorld('mubreda', {
   checkUpdates: () => ipcRenderer.invoke('update:check'),
   applyUpdate: () => ipcRenderer.invoke('update:apply'),
   openExternal: (url) => ipcRenderer.invoke('shell:open', url),
-  windowMinimize: () => ipcRenderer.send('window:minimize'),
-  windowClose: () => ipcRenderer.send('window:close'),
+  windowMinimize: () => ipcRenderer.invoke('window:minimize'),
+  windowClose: () => ipcRenderer.invoke('window:close'),
   onUpdateProgress: (callback) => {
     const handler = (_event, payload) => callback(payload);
     ipcRenderer.on('update:progress', handler);

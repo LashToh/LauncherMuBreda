@@ -1,6 +1,22 @@
 import './TitleBar.scss';
 
 export default function TitleBar() {
+  async function minimize() {
+    if (window.mubreda?.windowMinimize) {
+      await window.mubreda.windowMinimize();
+      return;
+    }
+    window.blur();
+  }
+
+  async function close() {
+    if (window.mubreda?.windowClose) {
+      await window.mubreda.windowClose();
+      return;
+    }
+    window.close();
+  }
+
   return (
     <header className="titlebar">
       <div className="titlebar__drag" />
@@ -9,7 +25,7 @@ export default function TitleBar() {
           type="button"
           className="titlebar__btn"
           aria-label="Minimize"
-          onClick={() => window.mubreda?.windowMinimize()}
+          onClick={minimize}
         >
           ─
         </button>
@@ -17,7 +33,7 @@ export default function TitleBar() {
           type="button"
           className="titlebar__btn titlebar__btn--close"
           aria-label="Close"
-          onClick={() => window.mubreda?.windowClose()}
+          onClick={close}
         >
           ×
         </button>
