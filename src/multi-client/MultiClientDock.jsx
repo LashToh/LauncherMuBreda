@@ -162,17 +162,17 @@ export default function MultiClientDock() {
           >
             {client.thumbUrl ? (
               <img
+                className="dock__thumb"
                 src={client.thumbUrl}
                 alt={client.label}
                 draggable={false}
                 onError={(event) => {
-                  event.currentTarget.style.display = 'none';
-                  const fallback = event.currentTarget.nextElementSibling;
-                  if (fallback) fallback.hidden = false;
+                  event.currentTarget.remove();
                 }}
               />
-            ) : null}
-            <span hidden={Boolean(client.thumbUrl)}>{client.initial}</span>
+            ) : (
+              <span className="dock__initial">{client.initial}</span>
+            )}
           </button>
         ))}
 
