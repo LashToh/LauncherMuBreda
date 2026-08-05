@@ -24,12 +24,13 @@ function resizeDock(clientCount = 0) {
     ? 72
     : Math.min(420, 88 + clientCount * 58 + 64);
   const display = screen.getPrimaryDisplay();
-  const { width: sw, height: sh } = display.workAreaSize;
+  const { x: workX, y: workY, width: sw, height: sh } = display.workArea;
+  const margin = 16;
   dockWindow.setBounds({
     width,
     height,
-    x: sw - width - 18,
-    y: Math.round(sh / 2 - height / 2),
+    x: workX + sw - width - margin,
+    y: workY + sh - height - margin,
   });
 }
 
