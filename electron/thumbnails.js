@@ -10,6 +10,11 @@ function thumbsDir(gameRoot = getGameRoot()) {
   return path.join(getLauncherDataDir(gameRoot), 'thumbs');
 }
 
+/**
+ * Only screen-capture when the MU window is foreground (CopyFromScreen
+ * otherwise grabs whatever is covering it — e.g. Cursor "launcher-11").
+ * Otherwise try PrintWindow / window DC; reject black frames.
+ */
 function captureScript(hwnd, outPath, size = 96) {
   const safeOut = outPath.replace(/'/g, "''");
   return `
@@ -22,6 +27,7 @@ public class MuThumb {
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hwnd, IntPtr hdcBlt, int nFlags);
   [DllImport("user32.dll")] public static extern IntPtr GetWindowDC(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
@@ -32,18 +38,31 @@ public class MuThumb {
 }
 "@
 
-function Test-NotTooDark([System.Drawing.Bitmap]$bmp) {
-  $sample = 0; $dark = 0
+function Test-GoodFrame([System.Drawing.Bitmap]$bmp) {
+  $sample = 0; $dark = 0; $bright = 0
   $step = [Math]::Max(1, [int]($bmp.Width / 6))
   for ($y = 2; $y -lt $bmp.Height; $y += $step) {
     for ($x = 2; $x -lt $bmp.Width; $x += $step) {
       $c = $bmp.GetPixel($x, $y)
+      $sum = $c.R + $c.G + $c.B
       $sample++
-      if (($c.R + $c.G + $c.B) -lt 40) { $dark++ }
+      if ($sum -lt 40) { $dark++ }
+      if ($sum -gt 60) { $bright++ }
     }
   }
   if ($sample -eq 0) { return $false }
-  return (($dark / $sample) -lt 0.9)
+  if (($dark / $sample) -gt 0.88) { return $false }
+  if ($bright -lt 3) { return $false }
+  return $true
+}
+
+function Make-Thumb([System.Drawing.Bitmap]$src, [int]$size) {
+  $thumb = New-Object System.Drawing.Bitmap $size, $size
+  $tg = [System.Drawing.Graphics]::FromImage($thumb)
+  $tg.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+  $tg.DrawImage($src, 0, 0, $size, $size)
+  $tg.Dispose()
+  return $thumb
 }
 
 $h = [IntPtr]${Number(hwnd)}
@@ -67,24 +86,21 @@ if ($srcY + $side -gt $rect.Bottom) { $srcY = $rect.Bottom - $side }
 
 $size = ${Number(size)}
 $thumb = $null
+$isForeground = ([MuThumb]::GetForegroundWindow() -eq $h)
 
-# 1) Screen BitBlt (best for DX when window is visible on a display)
-try {
-  $tmp = New-Object System.Drawing.Bitmap $side, $side
-  $g = [System.Drawing.Graphics]::FromImage($tmp)
-  $g.CopyFromScreen($srcX, $srcY, 0, 0, (New-Object System.Drawing.Size $side, $side))
-  $g.Dispose()
-  if (Test-NotTooDark $tmp) {
-    $thumb = New-Object System.Drawing.Bitmap $size, $size
-    $tg = [System.Drawing.Graphics]::FromImage($thumb)
-    $tg.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-    $tg.DrawImage($tmp, 0, 0, $size, $size)
-    $tg.Dispose()
-  }
-  $tmp.Dispose()
-} catch {}
+# Screen capture ONLY if this MU window is in the foreground
+if ($isForeground) {
+  try {
+    $tmp = New-Object System.Drawing.Bitmap $side, $side
+    $g = [System.Drawing.Graphics]::FromImage($tmp)
+    $g.CopyFromScreen($srcX, $srcY, 0, 0, (New-Object System.Drawing.Size $side, $side))
+    $g.Dispose()
+    if (Test-GoodFrame $tmp) { $thumb = Make-Thumb $tmp $size }
+    $tmp.Dispose()
+  } catch {}
+}
 
-# 2) Window DC BitBlt
+# Window DC / PrintWindow (may be black on DirectX, but never steals other apps' pixels)
 if ($null -eq $thumb) {
   try {
     $hdcSrc = [MuThumb]::GetWindowDC($h)
@@ -92,25 +108,16 @@ if ($null -eq $thumb) {
       $tmp = New-Object System.Drawing.Bitmap $side, $side
       $g = [System.Drawing.Graphics]::FromImage($tmp)
       $hdcDst = $g.GetHdc()
-      $localX = $srcX - $rect.Left
-      $localY = $srcY - $rect.Top
-      [void][MuThumb]::BitBlt($hdcDst, 0, 0, $side, $side, $hdcSrc, $localX, $localY, [MuThumb]::SRCCOPY)
+      [void][MuThumb]::BitBlt($hdcDst, 0, 0, $side, $side, $hdcSrc, ($srcX-$rect.Left), ($srcY-$rect.Top), [MuThumb]::SRCCOPY)
       $g.ReleaseHdc($hdcDst)
       $g.Dispose()
       [void][MuThumb]::ReleaseDC($h, $hdcSrc)
-      if (Test-NotTooDark $tmp) {
-        $thumb = New-Object System.Drawing.Bitmap $size, $size
-        $tg = [System.Drawing.Graphics]::FromImage($thumb)
-        $tg.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-        $tg.DrawImage($tmp, 0, 0, $size, $size)
-        $tg.Dispose()
-      }
+      if (Test-GoodFrame $tmp) { $thumb = Make-Thumb $tmp $size }
       $tmp.Dispose()
     }
   } catch {}
 }
 
-# 3) PrintWindow full content
 if ($null -eq $thumb) {
   try {
     $bmp = New-Object System.Drawing.Bitmap $winW, $winH
@@ -121,25 +128,19 @@ if ($null -eq $thumb) {
     $g.Dispose()
     $crop = $bmp.Clone((New-Object System.Drawing.Rectangle ($srcX-$rect.Left), ($srcY-$rect.Top), $side, $side), $bmp.PixelFormat)
     $bmp.Dispose()
-    if (Test-NotTooDark $crop) {
-      $thumb = New-Object System.Drawing.Bitmap $size, $size
-      $tg = [System.Drawing.Graphics]::FromImage($thumb)
-      $tg.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-      $tg.DrawImage($crop, 0, 0, $size, $size)
-      $tg.Dispose()
-    }
+    if (Test-GoodFrame $crop) { $thumb = Make-Thumb $crop $size }
     $crop.Dispose()
   } catch {}
 }
 
 if ($null -eq $thumb) {
-  @{ ok = $false; reason = 'capture-failed' } | ConvertTo-Json -Compress
+  @{ ok = $false; reason = 'capture-failed'; foreground = $isForeground } | ConvertTo-Json -Compress
   return
 }
 
 $thumb.Save('${safeOut}', [System.Drawing.Imaging.ImageFormat]::Png)
 $thumb.Dispose()
-@{ ok = $true } | ConvertTo-Json -Compress
+@{ ok = $true; foreground = $isForeground } | ConvertTo-Json -Compress
 `;
 }
 
@@ -188,8 +189,6 @@ export async function captureClientThumbnail(
   }
 
   if (!fs.existsSync(filePath)) return null;
-
-  // data URL is more reliable than file:// inside Electron
   const base64 = fs.readFileSync(filePath).toString('base64');
   return `data:image/png;base64,${base64}`;
 }

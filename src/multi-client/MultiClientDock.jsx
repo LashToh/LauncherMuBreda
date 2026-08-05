@@ -172,8 +172,11 @@ export default function MultiClientDock() {
                 }}
               />
             ) : (
-              <span className="dock__initial">{client.initial}</span>
+              <span className="dock__initial" title={client.label}>
+                {client.initial}
+              </span>
             )}
+            <span className="dock__name">{client.label}</span>
           </button>
         ))}
 
