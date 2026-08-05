@@ -1,33 +1,12 @@
-import { Menu, Tray, nativeImage, app } from 'electron';
-import path from 'node:path';
-import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { Menu, Tray, app } from 'electron';
+import { getAppIconImage } from './appIcon.js';
 
 let tray = null;
-
-function resolveTrayIcon() {
-  const candidates = [
-    path.join(__dirname, '..', 'build', 'icon.ico'),
-    path.join(__dirname, '..', 'public', 'assets', 'icon.ico'),
-    path.join(__dirname, '..', 'build', 'icon.png'),
-    path.join(__dirname, '..', 'public', 'assets', 'favicon.png'),
-  ];
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      const image = nativeImage.createFromPath(candidate);
-      if (!image.isEmpty()) return image.resize({ width: 16, height: 16 });
-    }
-  }
-  return nativeImage.createEmpty();
-}
 
 export function createTray({ onShow, onQuit }) {
   if (tray) return tray;
 
-  tray = new Tray(resolveTrayIcon());
+  tray = new Tray(getAppIconImage(16));
   tray.setToolTip('MU Breda Launcher');
 
   const contextMenu = Menu.buildFromTemplate([

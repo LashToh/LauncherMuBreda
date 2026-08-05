@@ -56,7 +56,9 @@ Without `LAUNCHER_GAME_ROOT`, the launcher uses `./dev-game-root`.
 npm run dist
 ```
 
-Artifacts go to `release/`.
+Artifacts go to `release/`. The Windows `.exe` icon is the Breda **B** favicon (`build/icon.ico`, generated from `public/assets/apple-touch-icon.png`).
+
+`npm run start` uses Electron’s default binary icon in Explorer; use `npm run dist` (on Windows) for the branded executable.
 
 ## Config defaults
 

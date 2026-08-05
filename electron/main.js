@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getAppIconPath } from './appIcon.js';
 import { DEFAULT_CONFIG, RESOLUTIONS } from './defaults.js';
 import {
   loadLauncherConfig,
@@ -20,14 +20,6 @@ const __dirname = path.dirname(__filename);
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 let mainWindow = null;
 let quitting = false;
-
-function getAppIconPath() {
-  const candidates = [
-    path.join(__dirname, '..', 'build', 'icon.ico'),
-    path.join(__dirname, '..', 'public', 'assets', 'icon.ico'),
-  ];
-  return candidates.find((candidate) => fs.existsSync(candidate));
-}
 
 function showLauncher() {
   if (!mainWindow || mainWindow.isDestroyed()) {
@@ -69,6 +61,11 @@ function createWindow() {
       sandbox: false,
     },
   });
+
+  const iconPath = getAppIconPath();
+  if (iconPath) {
+    mainWindow.setIcon(iconPath);
+  }
 
   mainWindow.once('ready-to-show', () => mainWindow?.show());
 

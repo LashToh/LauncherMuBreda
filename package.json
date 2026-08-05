@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && ELECTRON_DEV=1 electron .\"",
     "dev:renderer": "vite",
-    "build": "vite build",
+    "icons": "node scripts/generate-icons.mjs",
+    "build": "npm run icons && vite build",
     "start": "electron .",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder --win",
@@ -22,11 +23,15 @@
       "output": "release",
       "buildResources": "build"
     },
-    "icon": "build/icon.ico",
+    "icon": "icon.ico",
     "files": [
       "dist/**/*",
       "electron/**/*",
       "build/icon.ico",
+      "build/icon.png",
+      "public/assets/icon.ico",
+      "public/assets/favicon.ico",
+      "public/assets/favicon.png",
       "package.json"
     ],
     "win": {
@@ -34,7 +39,7 @@
         "portable",
         "nsis"
       ],
-      "icon": "build/icon.ico",
+      "icon": "icon.ico",
       "artifactName": "MuBreda-Launcher-${version}.${ext}"
     },
     "portable": {
@@ -56,7 +61,9 @@
     "concurrently": "^9.1.2",
     "electron": "^33.2.1",
     "electron-builder": "^25.1.8",
+    "png-to-ico": "^3.0.2",
     "sass": "^1.83.0",
+    "sharp": "^0.35.3",
     "vite": "^6.0.5",
     "wait-on": "^8.0.1"
   }
