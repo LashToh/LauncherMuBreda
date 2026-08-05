@@ -1,0 +1,64 @@
+@use '../../styles/variables' as *;
+
+.news-panel {
+  @include glass-panel;
+  width: 280px;
+  padding: 1rem 1.1rem 1.1rem;
+  border-radius: $radius-md;
+  animation: riseIn 0.7s ease both;
+
+  &__title {
+    font-family: $font-display;
+    font-size: 0.78rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: $color-gold;
+    margin-bottom: 0.75rem;
+  }
+
+  &__empty {
+    font-size: 1.05rem;
+    color: rgba(255, 255, 255, 0.62);
+  }
+
+  &__list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid rgba(240, 208, 138, 0.1);
+
+    &:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+  }
+
+  &__item-title {
+    font-size: 1.05rem;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  &__item-date {
+    font-size: 0.85rem;
+    color: rgba(240, 208, 138, 0.55);
+  }
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

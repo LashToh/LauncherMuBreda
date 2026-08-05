@@ -1,0 +1,60 @@
+{
+  "name": "launcher-mubreda",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MU Breda Season 21 — Premium desktop launcher",
+  "main": "electron/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && ELECTRON_DEV=1 electron .\"",
+    "dev:renderer": "vite",
+    "build": "vite build",
+    "start": "electron .",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder --win",
+    "check": "node --check electron/main.js",
+    "test:smoke": "electron electron/smoke-test.js"
+  },
+  "build": {
+    "appId": "net.mubreda.launcher",
+    "productName": "MU Breda Launcher",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ],
+      "icon": "public/assets/icon.ico",
+      "artifactName": "MuBreda-Launcher-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "MuBreda-Launcher-${version}-portable.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false
+    },
+    "extraResources": []
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "sass": "^1.83.0",
+    "vite": "^6.0.5",
+    "wait-on": "^8.0.1"
+  }
+}

@@ -1,0 +1,58 @@
+@use '../../styles/variables' as *;
+
+.titlebar {
+  position: relative;
+  z-index: 20;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.75rem 0 1rem;
+  background: linear-gradient(180deg, rgba(9, 9, 9, 0.92), rgba(9, 9, 9, 0.35));
+
+  &__drag {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex: 1;
+    height: 100%;
+    -webkit-app-region: drag;
+  }
+
+  &__mark {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+  }
+
+  &__title {
+    font-family: $font-display;
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(240, 208, 138, 0.85);
+  }
+
+  &__controls {
+    display: flex;
+    gap: 0.25rem;
+    -webkit-app-region: no-drag;
+  }
+
+  &__btn {
+    width: 34px;
+    height: 28px;
+    border-radius: $radius-sm;
+    color: rgba(255, 255, 255, 0.75);
+    transition: background $transition-fast, color $transition-fast;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    &--close:hover {
+      background: rgba(198, 23, 23, 0.85);
+    }
+  }
+}

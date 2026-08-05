@@ -1,0 +1,198 @@
+@use './styles/variables' as *;
+
+.launcher {
+  position: relative;
+  width: 1100px;
+  height: 680px;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.92);
+
+  &__bg {
+    position: absolute;
+    inset: 0;
+    background:
+      url('./assets/bg-header.png') right center / cover no-repeat,
+      radial-gradient(circle at 70% 40%, rgba(109, 0, 0, 0.35), transparent 45%),
+      $color-bg-deep;
+    transform: scale(1.04);
+    animation: bgDrift 18s ease-in-out infinite alternate;
+  }
+
+  &__gradient {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(
+        90deg,
+        rgba(9, 9, 9, 0.94) 0%,
+        rgba(9, 9, 9, 0.78) 28%,
+        rgba(27, 0, 0, 0.42) 55%,
+        rgba(9, 9, 9, 0.2) 100%
+      ),
+      linear-gradient(180deg, rgba(9, 9, 9, 0.55) 0%, transparent 28%, rgba(9, 9, 9, 0.72) 100%);
+  }
+
+  &__vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.55) 100%);
+    pointer-events: none;
+  }
+
+  &__embers {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(circle at 20% 80%, rgba(198, 23, 23, 0.22) 0 1px, transparent 2px),
+      radial-gradient(circle at 70% 60%, rgba(240, 208, 138, 0.18) 0 1px, transparent 2px),
+      radial-gradient(circle at 40% 30%, rgba(198, 23, 23, 0.16) 0 1px, transparent 2px);
+    animation: emberFloat 10s linear infinite;
+    opacity: 0.7;
+  }
+
+  &__main {
+    position: relative;
+    z-index: 2;
+    height: calc(680px - 42px);
+    display: grid;
+    grid-template-columns: 300px 1fr 140px;
+    gap: 1rem;
+    padding: 1.1rem 1.4rem 1.3rem;
+  }
+
+  &__left {
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 0.4rem;
+  }
+
+  &__center {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.85rem;
+    padding-bottom: 0.4rem;
+  }
+
+  &__right {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+    padding-top: 0.2rem;
+  }
+
+  &__logo {
+    width: min(420px, 100%);
+    height: auto;
+    filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.65));
+    animation: logoIn 0.9s ease both;
+  }
+
+  &__tagline {
+    margin-top: -0.35rem;
+    font-family: $font-display;
+    font-size: 0.78rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(240, 208, 138, 0.78);
+    animation: riseIn 0.8s ease 0.05s both;
+  }
+
+  &__cta {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 0.15rem;
+    animation: riseIn 0.85s ease 0.18s both;
+  }
+
+  &__play {
+    min-width: 220px;
+    padding: 0.95rem 2rem;
+    border-radius: $radius-sm;
+    background: linear-gradient(135deg, #5a0000 0%, $color-red-bright 55%, #e23b3b 100%);
+    box-shadow: $glow-red, inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    font-family: $font-display;
+    font-size: 1rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: #fff;
+    transition: transform $transition-fast, filter $transition-fast, box-shadow $transition-fast;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px) scale(1.01);
+      filter: brightness(1.08);
+      box-shadow: 0 0 50px rgba(198, 23, 23, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    }
+
+    &:disabled {
+      opacity: 0.7;
+      cursor: wait;
+    }
+  }
+
+  &__settings {
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    border-radius: $radius-sm;
+    border: 1px solid $glass-border;
+    background: rgba(9, 9, 9, 0.5);
+    color: $color-gold;
+    font-size: 1.25rem;
+    transition: border-color $transition-fast, background $transition-fast;
+
+    &:hover {
+      border-color: rgba(240, 208, 138, 0.45);
+      background: rgba(27, 0, 0, 0.65);
+    }
+  }
+
+  &__error {
+    color: #ffb4b4;
+    font-size: 0.95rem;
+  }
+}
+
+@keyframes bgDrift {
+  from {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.07) translate3d(-1.2%, -0.6%, 0);
+  }
+}
+
+@keyframes emberFloat {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-18px);
+  }
+}
+
+@keyframes logoIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
