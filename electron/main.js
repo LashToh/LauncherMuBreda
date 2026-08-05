@@ -12,6 +12,7 @@ import { loadGameSettings, saveGameSettings } from './gameSettings.js';
 import { launchGame } from './launcher.js';
 import { saveDockState } from './dockStore.js';
 import {
+  closeMultiClientWindow,
   createMultiClientWindow,
   getDockCollapsed,
   moveDockBy,
@@ -54,6 +55,16 @@ function showLauncher() {
   mainWindow.focus();
 }
 
+function quitLauncher() {
+  quitting = true;
+  closeMultiClientWindow();
+  destroyTray();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.destroy();
+  }
+  app.quit();
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1100,
@@ -81,8 +92,9 @@ function createWindow() {
 
   mainWindow.on('close', (event) => {
     if (quitting) return;
+    // Closing the launcher exits the app and the dock.
     event.preventDefault();
-    hideToTray(mainWindow);
+    quitLauncher();
   });
 
   if (isDev) {
@@ -180,8 +192,8 @@ function registerIpc() {
   ipcMain.handle('window:close', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
     if (win === mainWindow || win?.id === mainWindow?.id) {
-      hideToTray(mainWindow);
-      return { ok: true, tray: true };
+      quitLauncher();
+      return { ok: true, quit: true };
     }
     win?.close();
     return { ok: true };
@@ -267,11 +279,7 @@ app.whenReady().then(() => {
 
   createTray({
     onShow: () => showLauncher(),
-    onQuit: () => {
-      quitting = true;
-      destroyTray();
-      app.quit();
-    },
+    onQuit: () => quitLauncher(),
   });
 
   // Keep dock available for multi-client usage
@@ -285,8 +293,10 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   quitting = true;
+  closeMultiClientWindow();
 });
 
 app.on('window-all-closed', () => {
-  // Keep process alive for tray + multi-client dock.
+  if (!quitting) return;
+  // Allow quit when launcher was closed explicitly.
 });

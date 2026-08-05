@@ -146,6 +146,15 @@ export function hideMultiClientWindow() {
   dockWindow.hide();
 }
 
+export function closeMultiClientWindow() {
+  if (!dockWindow || dockWindow.isDestroyed()) {
+    dockWindow = null;
+    return;
+  }
+  dockWindow.destroy();
+  dockWindow = null;
+}
+
 export function syncDockSize(clientCount) {
   resizeDock(clientCount);
 }
