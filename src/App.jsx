@@ -64,22 +64,39 @@ export default function App() {
         setProgress(payload);
       });
 
+      // Non-blocking: keep Play visible even if API is slow/unreachable
       setUpdateStatus('checking');
-      const update = await window.mubreda.checkUpdates();
-      if (update.available) setUpdateStatus('available');
-      else if (update.skipped || !update.ok) setUpdateStatus('skipped');
-      else setUpdateStatus('ready');
+      Promise.race([
+        window.mubreda.checkUpdates(),
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                ok: false,
+                skipped: true,
+                allowPlay: true,
+                reason: 'TIMEOUT',
+              }),
+            4000,
+          ),
+        ),
+      ])
+        .then((update) => {
+          if (update.available) setUpdateStatus('available');
+          else if (update.skipped || !update.ok) setUpdateStatus('skipped');
+          else setUpdateStatus('ready');
+        })
+        .catch(() => setUpdateStatus('skipped'));
 
-      try {
-        const [serverInfo, newsItems] = await Promise.all([
-          fetchServerInfo(nextConfig.apiUrl).catch(() => null),
-          fetchNews(nextConfig.apiUrl).catch(() => []),
-        ]);
-        setServer(serverInfo);
-        setNews(newsItems);
-      } catch {
-        // offline-friendly
-      }
+      Promise.all([
+        fetchServerInfo(nextConfig.apiUrl).catch(() => null),
+        fetchNews(nextConfig.apiUrl).catch(() => []),
+      ])
+        .then(([serverInfo, newsItems]) => {
+          setServer(serverInfo);
+          setNews(newsItems);
+        })
+        .catch(() => {});
     }
 
     boot();
@@ -146,52 +163,56 @@ export default function App() {
       <TitleBar title="MU Breda Season 21" />
 
       <main className="launcher__main">
-        <div className="launcher__left">
-          <NewsPanel t={t} items={news} />
-        </div>
-
-        <div className="launcher__center">
-          <img
-            className="launcher__logo"
-            src="./assets/logo-mubreda.webp"
-            alt="MU Breda"
-          />
-          <p className="launcher__tagline">Season 21 — The Crusader Awakens</p>
-
-          <ServerStatus t={t} server={server} />
-
-          <UpdateBar
-            t={t}
-            status={updateStatus}
-            progress={progress}
-            onUpdate={handleUpdate}
-          />
-
-          <div className="launcher__cta">
-            <button
-              type="button"
-              className="launcher__play"
-              onClick={handlePlay}
-              disabled={launching}
-            >
-              {launching ? t.launching : t.play}
-            </button>
-            <button
-              type="button"
-              className="launcher__settings"
-              aria-label={t.settings}
-              onClick={() => {
-                setDraft(settings);
-                setSettingsOpen(true);
-              }}
-            >
-              <FiSettings />
-            </button>
+        <div className="launcher__content">
+          <div className="launcher__brand">
+            <img
+              className="launcher__logo"
+              src="./assets/logo-mubreda.webp"
+              alt="MU Breda"
+            />
+            <p className="launcher__tagline">Season 21 — The Crusader Awakens</p>
           </div>
 
-          {error ? <p className="launcher__error">{error}</p> : null}
+          <div className="launcher__actions">
+            <ServerStatus t={t} server={server} />
 
-          <SocialBar t={t} config={config} />
+            <UpdateBar
+              t={t}
+              status={updateStatus}
+              progress={progress}
+              onUpdate={handleUpdate}
+            />
+
+            <div className="launcher__cta">
+              <button
+                type="button"
+                className="launcher__play"
+                onClick={handlePlay}
+                disabled={launching}
+              >
+                {launching ? t.launching : t.play}
+              </button>
+              <button
+                type="button"
+                className="launcher__settings"
+                aria-label={t.settings}
+                onClick={() => {
+                  setDraft(settings);
+                  setSettingsOpen(true);
+                }}
+              >
+                <FiSettings />
+              </button>
+            </div>
+
+            {error ? <p className="launcher__error">{error}</p> : null}
+
+            <SocialBar t={t} config={config} />
+          </div>
+
+          <div className="launcher__news">
+            <NewsPanel t={t} items={news} />
+          </div>
         </div>
 
         <div className="launcher__right">

@@ -2,8 +2,10 @@
 
 .news-panel {
   @include glass-panel;
-  width: 280px;
-  padding: 1rem 1.1rem 1.1rem;
+  width: 300px;
+  max-height: 170px;
+  overflow: auto;
+  padding: 0.85rem 1rem 0.95rem;
   border-radius: $radius-md;
   animation: riseIn 0.7s ease both;
 

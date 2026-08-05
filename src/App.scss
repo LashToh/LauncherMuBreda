@@ -24,12 +24,12 @@
     background:
       linear-gradient(
         90deg,
-        rgba(9, 9, 9, 0.94) 0%,
-        rgba(9, 9, 9, 0.78) 28%,
-        rgba(27, 0, 0, 0.42) 55%,
-        rgba(9, 9, 9, 0.2) 100%
+        rgba(9, 9, 9, 0.96) 0%,
+        rgba(9, 9, 9, 0.88) 34%,
+        rgba(27, 0, 0, 0.35) 58%,
+        rgba(9, 9, 9, 0.12) 100%
       ),
-      linear-gradient(180deg, rgba(9, 9, 9, 0.55) 0%, transparent 28%, rgba(9, 9, 9, 0.72) 100%);
+      linear-gradient(180deg, rgba(9, 9, 9, 0.5) 0%, transparent 30%, rgba(9, 9, 9, 0.72) 100%);
   }
 
   &__vignette {
@@ -56,66 +56,77 @@
     z-index: 2;
     height: calc(680px - 42px);
     display: grid;
-    grid-template-columns: 300px 1fr 140px;
-    gap: 1rem;
-    padding: 1.1rem 1.4rem 1.3rem;
+    grid-template-columns: 1fr 150px;
+    gap: 0.75rem;
+    padding: 0.85rem 1.25rem 1rem;
   }
 
-  &__left {
-    display: flex;
-    align-items: flex-end;
-    padding-bottom: 0.4rem;
+  &__content {
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    align-content: start;
+    gap: 0.7rem;
+    min-width: 0;
+    max-width: 520px;
   }
 
-  &__center {
+  &__brand {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    justify-content: center;
-    gap: 0.85rem;
-    padding-bottom: 0.4rem;
+    gap: 0.35rem;
+    animation: logoIn 0.8s ease both;
+  }
+
+  &__logo {
+    width: 280px;
+    max-width: 100%;
+    height: auto;
+    filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.65));
+  }
+
+  &__tagline {
+    font-family: $font-display;
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(240, 208, 138, 0.78);
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+  }
+
+  &__news {
+    align-self: end;
+    animation: riseIn 0.75s ease 0.1s both;
   }
 
   &__right {
     display: flex;
     justify-content: flex-end;
     align-items: flex-start;
-    padding-top: 0.2rem;
-  }
-
-  &__logo {
-    width: min(420px, 100%);
-    height: auto;
-    filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.65));
-    animation: logoIn 0.9s ease both;
-  }
-
-  &__tagline {
-    margin-top: -0.35rem;
-    font-family: $font-display;
-    font-size: 0.78rem;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: rgba(240, 208, 138, 0.78);
-    animation: riseIn 0.8s ease 0.05s both;
+    padding-top: 0.15rem;
   }
 
   &__cta {
     display: flex;
     align-items: center;
-    gap: 0.7rem;
-    margin-top: 0.15rem;
-    animation: riseIn 0.85s ease 0.18s both;
+    gap: 0.65rem;
+    animation: riseIn 0.85s ease 0.12s both;
   }
 
   &__play {
-    min-width: 220px;
-    padding: 0.95rem 2rem;
+    min-width: 200px;
+    padding: 0.85rem 1.8rem;
     border-radius: $radius-sm;
     background: linear-gradient(135deg, #5a0000 0%, $color-red-bright 55%, #e23b3b 100%);
     box-shadow: $glow-red, inset 0 0 0 1px rgba(255, 255, 255, 0.08);
     font-family: $font-display;
-    font-size: 1rem;
+    font-size: 0.95rem;
     letter-spacing: 0.28em;
     text-transform: uppercase;
     color: #fff;
@@ -134,15 +145,15 @@
   }
 
   &__settings {
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
     display: grid;
     place-items: center;
     border-radius: $radius-sm;
     border: 1px solid $glass-border;
     background: rgba(9, 9, 9, 0.5);
     color: $color-gold;
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     transition: border-color $transition-fast, background $transition-fast;
 
     &:hover {
@@ -178,7 +189,7 @@
 @keyframes logoIn {
   from {
     opacity: 0;
-    transform: translateY(16px) scale(0.98);
+    transform: translateY(10px) scale(0.98);
   }
   to {
     opacity: 1;
