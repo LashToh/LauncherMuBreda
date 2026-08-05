@@ -8,10 +8,11 @@ import {
   getLauncherOptionPath,
   getOptionIniPath,
 } from './paths.js';
+import { readMuResolution, writeMuResolution } from './registry.js';
 
 function parseLauncherOption(raw) {
   const settings = {
-    resolutionIndex: 5,
+    resolutionIndex: 8,
     windowMode: true,
     languageId: 1,
     id: '',
@@ -60,8 +61,12 @@ function parseOptionIni(raw) {
     const value = trimmed.slice(eq + 1).trim();
 
     if (key === 'effect') result.effect = Number(value) || 4;
-    if (key === 'soundonoff' || key === 'sound') result.soundOn = value === '1' || value.toLowerCase() === 'true';
-    if (key === 'musiconoff' || key === 'music') result.musicOn = value === '1' || value.toLowerCase() === 'true';
+    if (key === 'soundonoff' || key === 'sound') {
+      result.soundOn = value === '1' || value.toLowerCase() === 'true';
+    }
+    if (key === 'musiconoff' || key === 'music') {
+      result.musicOn = value === '1' || value.toLowerCase() === 'true';
+    }
   }
 
   return result;
@@ -77,7 +82,7 @@ function serializeOptionIni(settings) {
   ].join('\n');
 }
 
-export function loadGameSettings(gameRoot = getGameRoot()) {
+export async function loadGameSettings(gameRoot = getGameRoot()) {
   const optionPath = getOptionIniPath(gameRoot);
   const launcherOptionPath = getLauncherOptionPath(gameRoot);
 
@@ -87,13 +92,17 @@ export function loadGameSettings(gameRoot = getGameRoot()) {
 
   const launcherOption = fs.existsSync(launcherOptionPath)
     ? parseLauncherOption(fs.readFileSync(launcherOptionPath, 'utf8'))
-    : parseLauncherOption('DevModeIndex:5\nWindowMode:1\nID:\nLanguage:1\n');
+    : parseLauncherOption('DevModeIndex:8\nWindowMode:1\nID:\nLanguage:1\n');
+
+  const registryResolution = await readMuResolution();
+  const resolutionIndex =
+    registryResolution != null ? registryResolution : launcherOption.resolutionIndex;
 
   return {
     soundOn: option.soundOn,
     musicOn: option.musicOn,
     effect: option.effect,
-    resolutionIndex: launcherOption.resolutionIndex,
+    resolutionIndex,
     windowMode: launcherOption.windowMode,
     languageId: launcherOption.languageId,
     language: GAME_TO_UI_LANG[launcherOption.languageId] || 'es',
@@ -101,8 +110,8 @@ export function loadGameSettings(gameRoot = getGameRoot()) {
   };
 }
 
-export function saveGameSettings(partial, gameRoot = getGameRoot()) {
-  const current = loadGameSettings(gameRoot);
+export async function saveGameSettings(partial, gameRoot = getGameRoot()) {
+  const current = await loadGameSettings(gameRoot);
   const next = { ...current, ...partial };
 
   if (partial.language && UI_TO_GAME_LANG[partial.language] !== undefined) {
@@ -135,6 +144,8 @@ export function saveGameSettings(partial, gameRoot = getGameRoot()) {
     }),
     'utf8',
   );
+
+  await writeMuResolution(next.resolutionIndex);
 
   return next;
 }

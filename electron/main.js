@@ -63,8 +63,8 @@ function registerIpc() {
   ipcMain.handle('bootstrap:get', async () => {
     const gameRoot = getGameRoot();
     ensureDir(getLauncherDataDir(gameRoot));
-    const config = loadLauncherConfig(gameRoot);
-    const settings = loadGameSettings(gameRoot);
+    const config = { ...DEFAULT_CONFIG, ...loadLauncherConfig(gameRoot) };
+    const settings = await loadGameSettings(gameRoot);
     const version = loadLocalVersion(gameRoot);
 
     return {
@@ -104,11 +104,19 @@ function registerIpc() {
   });
 
   ipcMain.handle('shell:open', async (_e, url) => {
-    if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
+    if (typeof url !== 'string') {
       return { ok: false, message: 'Invalid URL' };
     }
-    await shell.openExternal(url);
-    return { ok: true };
+    const normalized = url.trim();
+    if (!/^https?:\/\//i.test(normalized)) {
+      return { ok: false, message: 'Invalid URL' };
+    }
+    try {
+      await shell.openExternal(normalized);
+      return { ok: true, url: normalized };
+    } catch (error) {
+      return { ok: false, message: error.message, url: normalized };
+    }
   });
 
   ipcMain.on('window:minimize', () => mainWindow?.minimize());

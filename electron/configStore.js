@@ -30,7 +30,8 @@ export function loadLauncherConfig(gameRoot = getGameRoot()) {
   if (!fs.existsSync(configPath)) {
     writeJson(configPath, DEFAULT_CONFIG);
   }
-  return readJsonSafe(configPath, DEFAULT_CONFIG);
+  // Always merge defaults so new keys/links appear even on older configs.
+  return { ...DEFAULT_CONFIG, ...readJsonSafe(configPath, {}) };
 }
 
 export function saveLauncherConfig(partial, gameRoot = getGameRoot()) {

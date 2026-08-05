@@ -7,42 +7,32 @@ import SettingsModal from './components/SettingsModal/SettingsModal';
 import SocialBar from './components/SocialBar/SocialBar';
 import TitleBar from './components/TitleBar/TitleBar';
 import UpdateBar from './components/UpdateBar/UpdateBar';
+import {
+  FALLBACK_CONFIG,
+  FALLBACK_RESOLUTIONS,
+  FALLBACK_SETTINGS,
+} from './constants';
 import { getDictionary } from './i18n';
 import { fetchNews, fetchServerInfo } from './services/api';
 import './App.scss';
 
-const fallbackConfig = {
-  apiUrl: 'https://api.mubreda.net',
-  websiteUrl: 'https://mubreda.net',
-  discordUrl: 'https://discord.gg/SV6yW7XK7',
-  instagramUrl: 'https://www.instagram.com/mubredaonline/',
-  facebookUrl: 'https://www.facebook.com/mubredaonline/',
-  donateUrl: 'https://mubreda.net/donate',
-};
-
-const fallbackSettings = {
-  soundOn: true,
-  musicOn: true,
-  resolutionIndex: 5,
-  windowMode: true,
-  language: 'es',
-};
-
 export default function App() {
-  const [config, setConfig] = useState(fallbackConfig);
-  const [settings, setSettings] = useState(fallbackSettings);
-  const [resolutions, setResolutions] = useState([]);
+  const [config, setConfig] = useState(FALLBACK_CONFIG);
+  const [settings, setSettings] = useState(FALLBACK_SETTINGS);
+  const [resolutions, setResolutions] = useState(FALLBACK_RESOLUTIONS);
   const [language, setLanguage] = useState('es');
   const [news, setNews] = useState([]);
   const [server, setServer] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [draft, setDraft] = useState(fallbackSettings);
+  const [draft, setDraft] = useState(FALLBACK_SETTINGS);
   const [launching, setLaunching] = useState(false);
   const [error, setError] = useState('');
   const [updateStatus, setUpdateStatus] = useState('checking');
   const [progress, setProgress] = useState(null);
 
   const t = useMemo(() => getDictionary(language), [language]);
+  const resolutionOptions =
+    resolutions?.length > 0 ? resolutions : FALLBACK_RESOLUTIONS;
 
   useEffect(() => {
     let unsubscribe = () => {};
@@ -51,20 +41,23 @@ export default function App() {
       if (!window.mubreda) return;
 
       const bootstrap = await window.mubreda.getBootstrap();
-      const nextConfig = bootstrap.config || fallbackConfig;
-      const nextSettings = bootstrap.settings || fallbackSettings;
+      const nextConfig = { ...FALLBACK_CONFIG, ...(bootstrap.config || {}) };
+      const nextSettings = { ...FALLBACK_SETTINGS, ...(bootstrap.settings || {}) };
+      const nextResolutions =
+        bootstrap.resolutions?.length > 0
+          ? bootstrap.resolutions
+          : FALLBACK_RESOLUTIONS;
 
       setConfig(nextConfig);
       setSettings(nextSettings);
       setDraft(nextSettings);
-      setResolutions(bootstrap.resolutions || []);
+      setResolutions(nextResolutions);
       setLanguage(nextSettings.language || nextConfig.language || 'es');
 
       unsubscribe = window.mubreda.onUpdateProgress((payload) => {
         setProgress(payload);
       });
 
-      // Non-blocking: keep Play visible even if API is slow/unreachable
       setUpdateStatus('checking');
       Promise.race([
         window.mubreda.checkUpdates(),
@@ -144,13 +137,9 @@ export default function App() {
     setUpdateStatus('updating');
     setProgress(null);
     const result = await window.mubreda?.applyUpdate();
-    if (result?.ok && result.applied) {
-      setUpdateStatus('ready');
-    } else if (result?.ok && !result.applied) {
-      setUpdateStatus('ready');
-    } else {
-      setUpdateStatus('failed');
-    }
+    if (result?.ok && result.applied) setUpdateStatus('ready');
+    else if (result?.ok && !result.applied) setUpdateStatus('ready');
+    else setUpdateStatus('failed');
   }
 
   return (
@@ -170,7 +159,6 @@ export default function App() {
               src="./assets/logo-mubreda.webp"
               alt="MU Breda"
             />
-            <p className="launcher__tagline">Season 21 — The Crusader Awakens</p>
           </div>
 
           <div className="launcher__actions">
@@ -209,22 +197,21 @@ export default function App() {
 
             <SocialBar t={t} config={config} />
           </div>
+        </div>
 
+        <aside className="launcher__right">
+          <LanguageSwitch value={language} onChange={handleLanguageChange} />
           <div className="launcher__news">
             <NewsPanel t={t} items={news} />
           </div>
-        </div>
-
-        <div className="launcher__right">
-          <LanguageSwitch value={language} onChange={handleLanguageChange} />
-        </div>
+        </aside>
       </main>
 
       <SettingsModal
         t={t}
         open={settingsOpen}
         draft={draft}
-        resolutions={resolutions}
+        resolutions={resolutionOptions}
         onChange={(partial) => setDraft((prev) => ({ ...prev, ...partial }))}
         onSave={handleSaveSettings}
         onClose={() => setSettingsOpen(false)}
