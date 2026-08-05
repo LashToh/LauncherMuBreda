@@ -13,7 +13,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
-        multiclient: path.resolve(__dirname, 'multi-client.html'),
       },
     },
   },

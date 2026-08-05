@@ -13,8 +13,7 @@ Visual identity matches [CMSMuBreda](https://github.com/LashToh/CMSMuBreda).
 - News + server status from `https://api.mubreda.net`
 - Social links (website / Discord / Instagram / Facebook)
 - Client auto-update (Play still allowed if API is down)
-- Minimize/close sends launcher to **system tray**
-- Multi-client dock: focus open `main.exe` windows, `+` new client, collapse/restore all
+- Minimize sends launcher to **system tray**; close quits the app
 
 ## Layout on the client
 
