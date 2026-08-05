@@ -22,8 +22,6 @@ import {
 import {
   focusMuClient,
   listMuClients,
-  minimizeMuClients,
-  restoreMuClients,
 } from './muWindows.js';
 import { getGameRoot, getLauncherDataDir, ensureDir } from './paths.js';
 import { createTray, destroyTray, hideToTray } from './tray.js';
@@ -227,38 +225,13 @@ function registerIpc() {
     return result;
   });
 
-  ipcMain.handle('clients:minimize-all', async () => {
-    // Collapse UI immediately; act on cached hwnds (no re-scan).
-    setDockCollapsed(true);
+  // Arrow only collapses/expands the dock UI — never minimizes MU clients.
+  ipcMain.handle('dock:set-collapsed', async (_e, value) => {
+    setDockCollapsed(Boolean(value));
     syncDockSize(lastKnownHwnds.length || lastClientsCache.length);
-
-    let hwnds = lastKnownHwnds;
-    if (!hwnds.length) {
-      const listed = await listMuClients({ withThumbs: false });
-      hwnds = (listed.clients || []).map((c) => c.hwnd);
-      lastKnownHwnds = hwnds;
-      lastClientsCache = listed.clients || [];
-    }
-
-    const result = await minimizeMuClients(hwnds);
     return {
-      ...result,
-      collapsed: true,
-      clients: lastClientsCache,
-    };
-  });
-
-  ipcMain.handle('clients:restore-all', async () => {
-    setDockCollapsed(false);
-    const target = lastKnownHwnds.length
-      ? lastKnownHwnds
-      : lastClientsCache.map((c) => c.hwnd);
-    syncDockSize(target.length || lastClientsCache.length);
-
-    const result = await restoreMuClients(target);
-    return {
-      ...result,
-      collapsed: false,
+      ok: true,
+      collapsed: getDockCollapsed(),
       clients: lastClientsCache,
     };
   });

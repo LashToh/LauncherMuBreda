@@ -56,13 +56,9 @@ export default function MultiClientDock() {
 
     const nextCollapsed = !collapsed;
     busyToggle.current = true;
-    setCollapsed(nextCollapsed); // UI responds instantly
+    setCollapsed(nextCollapsed); // only collapses the dock UI
 
-    const action = nextCollapsed
-      ? window.mubreda?.minimizeAllClients()
-      : window.mubreda?.restoreAllClients();
-
-    Promise.resolve(action)
+    Promise.resolve(window.mubreda?.setDockCollapsed(nextCollapsed))
       .catch(() => {})
       .finally(() => {
         busyToggle.current = false;
@@ -132,7 +128,7 @@ export default function MultiClientDock() {
     <button
       type="button"
       className="dock__circle"
-      title={collapsed ? 'Restaurar / arrastrar para mover' : 'Minimizar / arrastrar para mover'}
+      title={collapsed ? 'Expandir dock / arrastrar para mover' : 'Ocultar dock / arrastrar para mover'}
       onClick={onToggle}
       onPointerDown={onArrowPointerDown}
       onPointerMove={onArrowPointerMove}
