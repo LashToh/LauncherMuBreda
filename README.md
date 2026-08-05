@@ -40,11 +40,13 @@ npm install
 npm run dev
 ```
 
-Optional game root for local testing:
+Optional game root for local testing (folder that contains `main.exe` / `StartGame.exe`):
 
-```bash
-# Windows / cross-env example
-LAUNCHER_GAME_ROOT="G:/Server Breda/Client" npm run dev
+```powershell
+# PowerShell — MU Breda Season 21 client
+$env:LAUNCHER_GAME_ROOT = "G:\Server Breda\MuDevs Season 21 cracked\Cliente Season 21 Beta"
+npm run build
+npm run start
 ```
 
 Without `LAUNCHER_GAME_ROOT`, the launcher uses `./dev-game-root`.
