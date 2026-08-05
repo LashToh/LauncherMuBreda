@@ -8,6 +8,10 @@ export const DEFAULT_CONFIG = {
   bootstrapFallback: '1 - StartGame.exe',
   language: 'es',
   allowPlayWithoutUpdate: true,
+  // Multi-client: only main.exe under this launcher's game folder.
+  // Optional extra title filters:
+  clientTitleInclude: [],
+  clientTitleExclude: ['ARGMUS'],
 };
 
 /**

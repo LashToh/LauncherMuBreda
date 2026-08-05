@@ -7,5 +7,7 @@
   "bootstrapExe": "StartGame.exe",
   "bootstrapFallback": "1 - StartGame.exe",
   "language": "es",
-  "allowPlayWithoutUpdate": true
+  "allowPlayWithoutUpdate": true,
+  "clientTitleInclude": [],
+  "clientTitleExclude": ["ARGMUS"]
 }
