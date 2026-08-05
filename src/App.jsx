@@ -160,7 +160,7 @@ export default function App() {
       <div className="launcher__vignette" aria-hidden="true" />
       <div className="launcher__embers" aria-hidden="true" />
 
-      <TitleBar title="MU Breda Season 21" />
+      <TitleBar />
 
       <main className="launcher__main">
         <div className="launcher__content">
