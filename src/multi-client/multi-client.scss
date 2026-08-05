@@ -7,6 +7,7 @@ body,
   background: transparent;
   overflow: hidden;
   font-family: 'Cinzel', Georgia, serif;
+  user-select: none;
 }
 
 .dock {
@@ -15,10 +16,10 @@ body,
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
+  justify-content: flex-end;
+  gap: 8px;
   -webkit-app-region: no-drag;
-  padding: 6px 0;
+  padding: 4px 0;
   box-sizing: border-box;
 
   &--collapsed {
@@ -26,12 +27,12 @@ body,
   }
 
   &__panel {
-    width: 58px;
+    width: 52px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    padding: 12px 8px;
+    gap: 8px;
+    padding: 10px 6px;
     border-radius: 999px;
     background: rgba(12, 12, 12, 0.92);
     border: 1px solid rgba(255, 255, 255, 0.16);
@@ -39,52 +40,73 @@ body,
   }
 
   &__avatar {
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     border: 2px solid rgba(255, 255, 255, 0.18);
     background:
       radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.25), transparent 40%),
       linear-gradient(160deg, var(--avatar-color, #c61717), #1a0505 85%);
     color: #fff;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 700;
     display: grid;
     place-items: center;
-    cursor: pointer;
-    transition: transform 0.15s ease, border-color 0.15s ease;
+    cursor: grab;
+    overflow: hidden;
+    padding: 0;
+    transition: transform 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      pointer-events: none;
+    }
 
     &:hover {
       transform: scale(1.06);
       border-color: rgba(240, 208, 138, 0.7);
     }
 
+    &.is-dragging {
+      opacity: 0.45;
+      cursor: grabbing;
+    }
+
     &--add {
       background: rgba(20, 20, 20, 0.95);
       color: #8ecbff;
-      font-size: 1.4rem;
+      font-size: 1.25rem;
       font-weight: 400;
       border-color: rgba(142, 203, 255, 0.35);
+      cursor: pointer;
     }
   }
 
   &__circle {
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.16);
     background: rgba(12, 12, 12, 0.92);
     color: #fff;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     display: grid;
     place-items: center;
-    cursor: pointer;
+    cursor: grab;
+    touch-action: none;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
     transition: transform 0.15s ease, border-color 0.15s ease;
 
     &:hover {
       transform: scale(1.05);
       border-color: rgba(240, 208, 138, 0.55);
+    }
+
+    &:active {
+      cursor: grabbing;
     }
   }
 }

@@ -1,5 +1,8 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { applyClientOrder, loadDockState } from './dockStore.js';
+import { attachThumbnails } from './thumbnails.js';
+import { getGameRoot } from './paths.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -109,7 +112,7 @@ async function runPowerShell(script) {
   return stdout.trim();
 }
 
-export async function listMuClients() {
+export async function listMuClients({ withThumbs = true } = {}) {
   if (process.platform !== 'win32') {
     return { ok: true, clients: [], skipped: true };
   }
@@ -119,7 +122,7 @@ export async function listMuClients() {
     if (!raw) return { ok: true, clients: [] };
     const parsed = JSON.parse(raw);
     const list = Array.isArray(parsed) ? parsed : [parsed];
-    const clients = list
+    let clients = list
       .filter((item) => item && item.hwnd)
       .map((item, index) => ({
         hwnd: String(item.hwnd),
@@ -131,6 +134,14 @@ export async function listMuClients() {
         initial: initialFromTitle(String(item.title || `C${index + 1}`)),
         color: colorFromId(Number(item.pid) || index),
       }));
+
+    const dock = loadDockState(getGameRoot());
+    clients = applyClientOrder(clients, dock.order || []);
+
+    if (withThumbs) {
+      clients = await attachThumbnails(clients, getGameRoot());
+    }
+
     return { ok: true, clients };
   } catch (error) {
     return { ok: false, clients: [], message: error.message };

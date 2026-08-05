@@ -10,9 +10,11 @@ import {
 } from './configStore.js';
 import { loadGameSettings, saveGameSettings } from './gameSettings.js';
 import { launchGame } from './launcher.js';
+import { saveDockState } from './dockStore.js';
 import {
   createMultiClientWindow,
   getDockCollapsed,
+  moveDockBy,
   setDockCollapsed,
   showMultiClientWindow,
   syncDockSize,
@@ -186,7 +188,7 @@ function registerIpc() {
   });
 
   ipcMain.handle('clients:list', async () => {
-    const result = await listMuClients();
+    const result = await listMuClients({ withThumbs: true });
     lastKnownHwnds = (result.clients || []).map((c) => c.hwnd);
     syncDockSize(result.clients?.length || 0);
     return {
@@ -207,7 +209,7 @@ function registerIpc() {
   });
 
   ipcMain.handle('clients:minimize-all', async () => {
-    const listed = await listMuClients();
+    const listed = await listMuClients({ withThumbs: false });
     const hwnds = (listed.clients || []).map((c) => c.hwnd);
     lastKnownHwnds = hwnds;
     const result = await minimizeMuClients(hwnds);
@@ -217,7 +219,7 @@ function registerIpc() {
   });
 
   ipcMain.handle('clients:restore-all', async () => {
-    const listed = await listMuClients();
+    const listed = await listMuClients({ withThumbs: false });
     const hwnds = (listed.clients || []).map((c) => c.hwnd);
     const target = hwnds.length ? hwnds : lastKnownHwnds;
     const result = await restoreMuClients(target);
@@ -226,9 +228,22 @@ function registerIpc() {
     return { ...result, collapsed: false };
   });
 
+  ipcMain.handle('clients:reorder', async (_e, orderedKeys = []) => {
+    const order = Array.isArray(orderedKeys)
+      ? orderedKeys.map(String)
+      : [];
+    saveDockState({ order });
+    return { ok: true, order };
+  });
+
   ipcMain.handle('dock:ensure', async () => {
     ensureDock();
     return { ok: true, collapsed: getDockCollapsed() };
+  });
+
+  ipcMain.handle('dock:move-by', async (_e, dx, dy) => {
+    const next = moveDockBy(Number(dx) || 0, Number(dy) || 0);
+    return { ok: true, position: next };
   });
 }
 
