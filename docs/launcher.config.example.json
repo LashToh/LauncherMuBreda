@@ -4,10 +4,7 @@
   "discordUrl": "https://discord.gg/SV6yW7XK7",
   "instagramUrl": "https://www.instagram.com/mubredaonline/",
   "facebookUrl": "https://www.facebook.com/mubredaonline/",
-  "bootstrapExe": "StartGame.exe",
-  "bootstrapFallback": "1 - StartGame.exe",
+  "bootstrapExe": "main.exe",
   "language": "es",
-  "allowPlayWithoutUpdate": true,
-  "clientTitleInclude": [],
-  "clientTitleExclude": ["ARGMUS"]
+  "allowPlayWithoutUpdate": true
 }

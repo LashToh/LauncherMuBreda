@@ -7,7 +7,7 @@ Visual identity matches [CMSMuBreda](https://github.com/LashToh/CMSMuBreda).
 ## Features (v1)
 
 - Hero Play UI (Season 21 crimson/gold)
-- **Play** via existing `StartGame.exe` bootstrap (keeps TrustClient flow)
+- **Play** launches `main.exe` directly from the client folder
 - Settings: sound, music, resolution, window mode
 - Language buttons **ES / EN / PT** (launcher UI + game `LauncherOption.if`)
 - News + server status from `https://api.mubreda.net`
@@ -22,8 +22,7 @@ Place the built launcher next to `main.exe`:
 ```text
 Client/
 ├── main.exe
-├── StartGame.exe
-├── MuBreda Launcher.exe
+├── MuBreda-Launcher-*-portable.exe
 ├── option.ini                 ← written by launcher
 ├── LauncherOption.if          ← written by launcher
 └── Data/
@@ -39,7 +38,7 @@ npm install
 npm run dev
 ```
 
-Optional game root for local testing (folder that contains `main.exe` / `StartGame.exe`):
+Optional game root for local testing (folder that contains `main.exe`):
 
 ```powershell
 # PowerShell — MU Breda Season 21 client
@@ -58,10 +57,10 @@ npm run dist
 
 Artifacts go to `release/`:
 
-- `MuBreda-Launcher-<version>-portable.exe` — put this **inside the client folder** (next to `main.exe` / `StartGame.exe`)
+- `MuBreda-Launcher-<version>-portable.exe` — put this **inside the client folder** (next to `main.exe`)
 - Installer NSIS (optional)
 
-The portable build reads `PORTABLE_EXECUTABLE_DIR` so Play finds `StartGame.exe` next to the `.exe` you double-clicked (not the temp extract folder).
+The portable build reads `PORTABLE_EXECUTABLE_DIR` so Play finds `main.exe` next to the `.exe` you double-clicked (not the temp extract folder).
 
 Icon: `build/icon.ico` (Breda **B**). If Windows packaging fails on symlinks, enable **Developer Mode** and clear `%LOCALAPPDATA%\electron-builder\Cache\winCodeSign`.
 
@@ -71,7 +70,7 @@ Icon: `build/icon.ico` (Breda **B**). If Windows packaging fails on symlinks, en
 
 - `apiUrl`: `https://api.mubreda.net`
 - `websiteUrl`: `https://mubreda.net`
-- donate / social URLs
-- `bootstrapExe`: `StartGame.exe` (fallback `1 - StartGame.exe`)
+- social URLs
+- `bootstrapExe`: `main.exe`
 
 See `docs/launcher-manifest.md` for the update API contract.
