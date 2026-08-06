@@ -19,12 +19,12 @@ fs.rmSync(outFolder, { recursive: true, force: true });
 fs.cpSync(unpacked, outFolder, { recursive: true });
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-const zipName = `MuBreda-Launcher-${pkg.version}-portable-folder.zip`;
+const zipName = `MuBreda-Launcher-${pkg.version}-client-files.zip`;
 const zipPath = path.join(releaseDir, zipName);
 
 if (fs.existsSync(zipPath)) fs.rmSync(zipPath);
 
-// Prefer PowerShell Compress-Archive on Windows; fall back to tar on Linux CI.
+// Zip the *contents* (not a nested folder) so extract lands next to Main.exe.
 try {
   if (process.platform === 'win32') {
     execFileSync(
@@ -32,12 +32,12 @@ try {
       [
         '-NoProfile',
         '-Command',
-        `Compress-Archive -Path '${outFolder.replace(/'/g, "''")}' -DestinationPath '${zipPath.replace(/'/g, "''")}' -Force`,
+        `Compress-Archive -Path '${outFolder.replace(/'/g, "''")}\\*' -DestinationPath '${zipPath.replace(/'/g, "''")}' -Force`,
       ],
       { stdio: 'inherit' },
     );
   } else {
-    execFileSync('tar', ['-a', '-cf', zipPath, '-C', releaseDir, folderName], {
+    execFileSync('tar', ['-a', '-cf', zipPath, '-C', outFolder, '.'], {
       stdio: 'inherit',
     });
   }
@@ -45,8 +45,11 @@ try {
   console.warn('Zip step failed (folder still available):', error.message);
 }
 
-console.log(`Portable folder ready: release/${folderName}/`);
+console.log(`Ready: release/${folderName}/`);
 if (fs.existsSync(zipPath)) {
   console.log(`Zip ready: release/${zipName}`);
 }
-console.log('Copy that folder into the client (next to Main.exe) and run MuBreda-Launcher.exe inside it.');
+console.log(
+  'Copy EVERYTHING inside release/MuBreda-Launcher/ into the client folder (same place as Main.exe).',
+);
+console.log('Then run MuBreda-Launcher.exe from that client folder.');

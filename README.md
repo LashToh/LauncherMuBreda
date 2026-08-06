@@ -17,15 +17,14 @@ Visual identity matches [CMSMuBreda](https://github.com/LashToh/CMSMuBreda).
 
 ## Layout on the client
 
-Recommended portable layout (folder — no extract on every open):
+Copy the **contents** of `release/MuBreda-Launcher/` into the client folder (same place as `Main.exe`), not as a subfolder:
 
 ```text
 Client/
 ├── Main.exe
-├── MuBreda-Launcher/          ← copy this whole folder
-│   ├── MuBreda-Launcher.exe
-│   ├── resources/
-│   └── ...
+├── MuBreda-Launcher.exe       ← launcher (loose next to Main)
+├── resources/                 ← Electron runtime files
+├── *.dll / *.pak / ...
 ├── option.ini                 ← written by launcher
 ├── LauncherOption.if          ← written by launcher
 └── Data/
@@ -60,8 +59,8 @@ npm run dist
 
 This builds a **ready-to-run folder** (not an installer, not a self-extracting portable):
 
-- `release/MuBreda-Launcher/` — copy into the client next to `Main.exe`, run `MuBreda-Launcher.exe`
-- `release/MuBreda-Launcher-<version>-portable-folder.zip` — same folder, zipped to share
+- `release/MuBreda-Launcher/` — copy **everything inside** this folder into the client (next to `Main.exe`), then run `MuBreda-Launcher.exe`
+- `release/MuBreda-Launcher-<version>-client-files.zip` — same files, zipped (extract directly into the client folder)
 
 Optional extras:
 
