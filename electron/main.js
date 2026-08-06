@@ -105,7 +105,17 @@ function registerIpc() {
   ipcMain.handle('settings:save', async (_e, partial) => saveGameSettings(partial || {}));
   ipcMain.handle('config:save', async (_e, partial) => saveLauncherConfig(partial || {}));
 
-  ipcMain.handle('game:launch', async () => launchGame());
+  ipcMain.handle('game:launch', async () => {
+    try {
+      return await launchGame();
+    } catch (error) {
+      return {
+        ok: false,
+        code: 'LAUNCH_EXCEPTION',
+        message: error?.message || 'No se pudo iniciar el cliente.',
+      };
+    }
+  });
 
   ipcMain.handle('update:check', async () => checkForUpdates());
   ipcMain.handle('update:apply', async (event) => {

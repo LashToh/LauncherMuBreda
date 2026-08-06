@@ -2,16 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { app } from 'electron';
 
-const GAME_MARKERS = [
-  'main.exe',
-  'StartGame.exe',
-  '1 - StartGame.exe',
-];
-
 function looksLikeGameRoot(dir) {
   if (!dir) return false;
   try {
-    return GAME_MARKERS.some((name) => fs.existsSync(path.join(dir, name)));
+    const entries = fs.readdirSync(dir).map((name) => name.toLowerCase());
+    return entries.includes('main.exe');
   } catch {
     return false;
   }
