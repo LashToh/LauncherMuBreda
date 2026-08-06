@@ -1,6 +1,6 @@
 {
   "name": "launcher-mubreda",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "description": "MU Breda Season 21 — Premium desktop launcher",
   "main": "electron/main.js",
@@ -11,8 +11,9 @@
     "icons": "node scripts/generate-icons.mjs",
     "build": "npm run icons && vite build",
     "start": "electron .",
-    "pack": "npm run build && electron-builder --win dir",
-    "dist": "npm run build && electron-builder --win portable nsis dir",
+    "pack": "npm run build && electron-builder --win dir && node scripts/package-portable-folder.mjs",
+    "dist": "npm run build && electron-builder --win dir nsis && node scripts/package-portable-folder.mjs",
+    "dist:single": "npm run build && electron-builder --win portable",
     "check": "node --check electron/main.js",
     "test:smoke": "electron electron/smoke-test.js"
   },
@@ -36,7 +37,7 @@
     ],
     "win": {
       "target": [
-        "portable",
+        "dir",
         "nsis"
       ],
       "icon": "icon.ico",
@@ -44,12 +45,12 @@
       "artifactName": "MuBreda-Launcher-${version}.${ext}",
       "signAndEditExecutable": true
     },
-    "portable": {
-      "artifactName": "MuBreda-Launcher-${version}-portable.${ext}"
-    },
     "nsis": {
       "oneClick": true,
       "allowToChangeInstallationDirectory": false
+    },
+    "portable": {
+      "artifactName": "MuBreda-Launcher-${version}-singlefile.${ext}"
     },
     "extraResources": []
   },

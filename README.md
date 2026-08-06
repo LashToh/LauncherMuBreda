@@ -17,12 +17,15 @@ Visual identity matches [CMSMuBreda](https://github.com/LashToh/CMSMuBreda).
 
 ## Layout on the client
 
-Place the built launcher next to `main.exe`:
+Recommended portable layout (folder — no extract on every open):
 
 ```text
 Client/
-├── main.exe
-├── MuBreda-Launcher-*-portable.exe
+├── Main.exe
+├── MuBreda-Launcher/          ← copy this whole folder
+│   ├── MuBreda-Launcher.exe
+│   ├── resources/
+│   └── ...
 ├── option.ini                 ← written by launcher
 ├── LauncherOption.if          ← written by launcher
 └── Data/
@@ -49,7 +52,7 @@ npm run start
 
 Without `LAUNCHER_GAME_ROOT`, the launcher uses `./dev-game-root`.
 
-## Build Windows portable
+## Build Windows portable folder
 
 ```bash
 npm run dist
@@ -57,11 +60,10 @@ npm run dist
 
 Artifacts go to `release/`:
 
-- **Faster daily use:** copy the whole `release/win-unpacked/` folder into the client (or run `MuBreda-Launcher.exe` from there). No extract on each open.
-- `MuBreda-Launcher-<version>-portable.exe` — single file, but **slower** (unpacks to temp every launch)
+- `MuBreda-Launcher/` — **recommended portable**: copy this folder into the client next to `Main.exe`, then run `MuBreda-Launcher.exe` inside it (fast, no unpack each launch)
+- `MuBreda-Launcher-<version>-portable-folder.zip` — same folder, zipped for distribution
 - NSIS installer (optional)
-
-Put the launcher next to `Main.exe`. Portable builds read `PORTABLE_EXECUTABLE_DIR` so Play finds the client folder.
+- Single-file self-extracting exe is optional and slower: `npm run dist:single`
 
 Icon: `build/icon.ico` (Breda **B**). If Windows packaging fails on symlinks, enable **Developer Mode** and clear `%LOCALAPPDATA%\electron-builder\Cache\winCodeSign`.
 

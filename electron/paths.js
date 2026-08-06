@@ -13,12 +13,13 @@ function looksLikeGameRoot(dir) {
 }
 
 /**
- * Game root = folder that contains main.exe / StartGame.exe.
- * Priority:
- * 1. LAUNCHER_GAME_ROOT (dev/override)
- * 2. PORTABLE_EXECUTABLE_DIR (electron-builder portable)
- * 3. Directory of the packaged exe / unpacked build
- * 4. Dev fallback ./dev-game-root
+ * Game root = folder that contains Main.exe.
+ *
+ * Supports:
+ * - launcher exe sitting next to Main.exe
+ * - launcher inside a subfolder (MuBreda-Launcher/) next to Main.exe
+ * - electron-builder single-file portable (PORTABLE_EXECUTABLE_DIR)
+ * - LAUNCHER_GAME_ROOT override / dev-game-root
  */
 export function getGameRoot() {
   if (process.env.LAUNCHER_GAME_ROOT) {
@@ -28,18 +29,26 @@ export function getGameRoot() {
   const candidates = [];
 
   if (process.env.PORTABLE_EXECUTABLE_DIR) {
-    candidates.push(path.resolve(process.env.PORTABLE_EXECUTABLE_DIR));
+    const portableDir = path.resolve(process.env.PORTABLE_EXECUTABLE_DIR);
+    candidates.push(portableDir);
+    candidates.push(path.dirname(portableDir));
   }
 
   if (app.isPackaged) {
-    candidates.push(path.dirname(process.execPath));
+    const exeDir = path.dirname(process.execPath);
+    candidates.push(exeDir);
+    candidates.push(path.dirname(exeDir));
   } else {
     candidates.push(path.resolve(process.cwd(), 'dev-game-root'));
   }
 
+  const seen = new Set();
   for (const candidate of candidates) {
-    if (looksLikeGameRoot(candidate)) {
-      return candidate;
+    const normalized = path.resolve(candidate);
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    if (looksLikeGameRoot(normalized)) {
+      return normalized;
     }
   }
 
