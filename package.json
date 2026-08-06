@@ -12,7 +12,8 @@
     "build": "npm run icons && vite build",
     "start": "electron .",
     "pack": "npm run build && electron-builder --win dir && node scripts/package-portable-folder.mjs",
-    "dist": "npm run build && electron-builder --win dir nsis && node scripts/package-portable-folder.mjs",
+    "dist": "npm run build && electron-builder --win dir && node scripts/package-portable-folder.mjs",
+    "dist:installer": "npm run build && electron-builder --win nsis",
     "dist:single": "npm run build && electron-builder --win portable",
     "check": "node --check electron/main.js",
     "test:smoke": "electron electron/smoke-test.js"
@@ -37,8 +38,7 @@
     ],
     "win": {
       "target": [
-        "dir",
-        "nsis"
+        "dir"
       ],
       "icon": "icon.ico",
       "executableName": "MuBreda-Launcher",

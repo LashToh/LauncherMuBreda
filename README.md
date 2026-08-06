@@ -52,18 +52,21 @@ npm run start
 
 Without `LAUNCHER_GAME_ROOT`, the launcher uses `./dev-game-root`.
 
-## Build Windows portable folder
+## Build Windows (no installer)
 
 ```bash
 npm run dist
 ```
 
-Artifacts go to `release/`:
+This builds a **ready-to-run folder** (not an installer, not a self-extracting portable):
 
-- `MuBreda-Launcher/` — **recommended portable**: copy this folder into the client next to `Main.exe`, then run `MuBreda-Launcher.exe` inside it (fast, no unpack each launch)
-- `MuBreda-Launcher-<version>-portable-folder.zip` — same folder, zipped for distribution
-- NSIS installer (optional)
-- Single-file self-extracting exe is optional and slower: `npm run dist:single`
+- `release/MuBreda-Launcher/` — copy into the client next to `Main.exe`, run `MuBreda-Launcher.exe`
+- `release/MuBreda-Launcher-<version>-portable-folder.zip` — same folder, zipped to share
+
+Optional extras:
+
+- `npm run dist:installer` — NSIS setup
+- `npm run dist:single` — single self-extracting exe (slower)
 
 Icon: `build/icon.ico` (Breda **B**). If Windows packaging fails on symlinks, enable **Developer Mode** and clear `%LOCALAPPDATA%\electron-builder\Cache\winCodeSign`.
 
