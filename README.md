@@ -17,21 +17,25 @@ Visual identity matches [CMSMuBreda](https://github.com/LashToh/CMSMuBreda).
 
 ## Layout on the client
 
-Copy the **contents** of `release/MuBreda-Launcher/` into the client folder (same place as `Main.exe`), not as a subfolder:
+Only the stub stays loose next to `Main.exe`. All Electron files go in one folder:
 
 ```text
 Client/
 ├── Main.exe
-├── MuBreda-Launcher.exe       ← launcher (loose next to Main)
-├── resources/                 ← Electron runtime files
-├── *.dll / *.pak / ...
-├── option.ini                 ← written by launcher
-├── LauncherOption.if          ← written by launcher
+├── MuBreda-Launcher.exe       ← small stub (only loose launcher file)
+├── MuBreda-Launcher/          ← everything else
+│   ├── MuBreda-Launcher-App.exe
+│   ├── resources/
+│   └── ...
+├── option.ini
+├── LauncherOption.if
 └── Data/
     └── Launcher/
         ├── launcher.config.json
         └── version.json
 ```
+
+Copy from `release/client-dropin/`: the stub `.exe` + the `MuBreda-Launcher\` folder.
 
 ## Develop
 
@@ -57,10 +61,11 @@ Without `LAUNCHER_GAME_ROOT`, the launcher uses `./dev-game-root`.
 npm run dist
 ```
 
-This builds a **ready-to-run folder** (not an installer, not a self-extracting portable):
+This builds a **no-install drop-in** (not a self-extracting portable):
 
-- `release/MuBreda-Launcher/` — copy **everything inside** this folder into the client (next to `Main.exe`), then run `MuBreda-Launcher.exe`
-- `release/MuBreda-Launcher-<version>-client-files.zip` — same files, zipped (extract directly into the client folder)
+- `release/client-dropin/MuBreda-Launcher.exe` — put next to `Main.exe`
+- `release/client-dropin/MuBreda-Launcher/` — put next to `Main.exe`
+- `release/MuBreda-Launcher-<version>-client-dropin.zip` — both, zipped
 
 Optional extras:
 
