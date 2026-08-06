@@ -28,8 +28,9 @@ export function launchGame(gameRoot = getGameRoot()) {
     return {
       ok: false,
       code: 'BOOTSTRAP_MISSING',
+      gameRoot,
       message:
-        'No se encontró StartGame.exe. Colocá el launcher en la carpeta del cliente junto a main.exe / StartGame.exe.',
+        `No se encontró StartGame.exe en:\n${gameRoot}\n\nColocá el launcher portable en la carpeta del cliente (junto a main.exe / StartGame.exe).`,
     };
   }
 

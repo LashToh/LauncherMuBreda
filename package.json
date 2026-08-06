@@ -1,6 +1,6 @@
 {
   "name": "launcher-mubreda",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "MU Breda Season 21 — Premium desktop launcher",
   "main": "electron/main.js",
@@ -40,7 +40,9 @@
         "nsis"
       ],
       "icon": "icon.ico",
-      "artifactName": "MuBreda-Launcher-${version}.${ext}"
+      "executableName": "MuBreda-Launcher",
+      "artifactName": "MuBreda-Launcher-${version}.${ext}",
+      "signAndEditExecutable": true
     },
     "portable": {
       "artifactName": "MuBreda-Launcher-${version}-portable.${ext}"

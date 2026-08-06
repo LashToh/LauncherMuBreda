@@ -56,9 +56,14 @@ Without `LAUNCHER_GAME_ROOT`, the launcher uses `./dev-game-root`.
 npm run dist
 ```
 
-Artifacts go to `release/`. The Windows `.exe` icon is the Breda **B** favicon (`build/icon.ico`, generated from `public/assets/apple-touch-icon.png`).
+Artifacts go to `release/`:
 
-`npm run start` uses Electron’s default binary icon in Explorer; use `npm run dist` (on Windows) for the branded executable.
+- `MuBreda-Launcher-<version>-portable.exe` — put this **inside the client folder** (next to `main.exe` / `StartGame.exe`)
+- Installer NSIS (optional)
+
+The portable build reads `PORTABLE_EXECUTABLE_DIR` so Play finds `StartGame.exe` next to the `.exe` you double-clicked (not the temp extract folder).
+
+Icon: `build/icon.ico` (Breda **B**). If Windows packaging fails on symlinks, enable **Developer Mode** and clear `%LOCALAPPDATA%\electron-builder\Cache\winCodeSign`.
 
 ## Config defaults
 
