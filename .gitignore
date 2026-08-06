@@ -9,6 +9,7 @@ Thumbs.db
 Data/
 dev-game-root/
 *.exe
+!build/MuBreda-Launcher.exe
 !public/**
 .vscode/
 .idea/
