@@ -94,7 +94,16 @@ export async function loadGameSettings(gameRoot = getGameRoot()) {
     ? parseLauncherOption(fs.readFileSync(launcherOptionPath, 'utf8'))
     : parseLauncherOption('DevModeIndex:8\nWindowMode:1\nID:\nLanguage:1\n');
 
-  const registryResolution = await readMuResolution();
+  // Don't stall launcher boot if registry is slow/locked.
+  let registryResolution = null;
+  try {
+    registryResolution = await Promise.race([
+      readMuResolution(),
+      new Promise((resolve) => setTimeout(() => resolve(null), 250)),
+    ]);
+  } catch {
+    registryResolution = null;
+  }
   const resolutionIndex =
     registryResolution != null ? registryResolution : launcherOption.resolutionIndex;
 

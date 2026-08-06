@@ -59,6 +59,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      backgroundThrottling: false,
     },
   });
 
@@ -67,7 +68,16 @@ function createWindow() {
     mainWindow.setIcon(iconPath);
   }
 
-  mainWindow.once('ready-to-show', () => mainWindow?.show());
+  let shown = false;
+  const reveal = () => {
+    if (shown || !mainWindow || mainWindow.isDestroyed()) return;
+    shown = true;
+    mainWindow.show();
+  };
+
+  mainWindow.once('ready-to-show', reveal);
+  // Failsafe so a slow paint never leaves the app invisible.
+  setTimeout(reveal, 1200);
 
   mainWindow.on('close', (event) => {
     if (quitting) return;
@@ -178,14 +188,21 @@ app.whenReady().then(() => {
     app.setAppUserModelId('net.mubreda.launcher');
   }
 
-  ensureDir(getLauncherDataDir());
-  loadLauncherConfig();
   registerIpc();
   createWindow();
 
-  createTray({
-    onShow: () => showLauncher(),
-    onQuit: () => quitLauncher(),
+  // Defer non-critical work until after the window starts loading.
+  setImmediate(() => {
+    try {
+      ensureDir(getLauncherDataDir());
+      loadLauncherConfig();
+    } catch {
+      // ignore boot filesystem errors
+    }
+    createTray({
+      onShow: () => showLauncher(),
+      onQuit: () => quitLauncher(),
+    });
   });
 
   app.on('activate', () => {

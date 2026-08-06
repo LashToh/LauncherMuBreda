@@ -70,7 +70,7 @@ export default function App() {
                 allowPlay: true,
                 reason: 'TIMEOUT',
               }),
-            4000,
+            2000,
           ),
         ),
       ])
@@ -156,7 +156,7 @@ export default function App() {
           <div className="launcher__brand">
             <img
               className="launcher__logo"
-              src="./assets/logo-mubreda.webp"
+              src="./assets/logo-mubreda-launcher.webp"
               alt="MU Breda"
             />
           </div>

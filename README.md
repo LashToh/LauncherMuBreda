@@ -57,10 +57,11 @@ npm run dist
 
 Artifacts go to `release/`:
 
-- `MuBreda-Launcher-<version>-portable.exe` — put this **inside the client folder** (next to `main.exe`)
-- Installer NSIS (optional)
+- **Faster daily use:** copy the whole `release/win-unpacked/` folder into the client (or run `MuBreda-Launcher.exe` from there). No extract on each open.
+- `MuBreda-Launcher-<version>-portable.exe` — single file, but **slower** (unpacks to temp every launch)
+- NSIS installer (optional)
 
-The portable build reads `PORTABLE_EXECUTABLE_DIR` so Play finds `main.exe` next to the `.exe` you double-clicked (not the temp extract folder).
+Put the launcher next to `Main.exe`. Portable builds read `PORTABLE_EXECUTABLE_DIR` so Play finds the client folder.
 
 Icon: `build/icon.ico` (Breda **B**). If Windows packaging fails on symlinks, enable **Developer Mode** and clear `%LOCALAPPDATA%\electron-builder\Cache\winCodeSign`.
 
