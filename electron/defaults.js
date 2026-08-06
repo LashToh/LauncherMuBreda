@@ -4,14 +4,9 @@ export const DEFAULT_CONFIG = {
   discordUrl: 'https://discord.gg/SV6yW7XK7',
   instagramUrl: 'https://www.instagram.com/mubredaonline/',
   facebookUrl: 'https://www.facebook.com/mubredaonline/',
-  bootstrapExe: 'StartGame.exe',
-  bootstrapFallback: '1 - StartGame.exe',
+  bootstrapExe: 'main.exe',
   language: 'es',
   allowPlayWithoutUpdate: true,
-  // Multi-client: only main.exe under this launcher's game folder.
-  // Optional extra title filters:
-  clientTitleInclude: [],
-  clientTitleExclude: ['ARGMUS'],
 };
 
 /**

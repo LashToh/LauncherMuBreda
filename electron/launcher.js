@@ -4,37 +4,27 @@ import { spawn } from 'node:child_process';
 import { loadLauncherConfig } from './configStore.js';
 import { getGameRoot } from './paths.js';
 
-function resolveBootstrap(gameRoot, config) {
-  const candidates = [
-    config.bootstrapExe,
-    config.bootstrapFallback,
-    'StartGame.exe',
-    '1 - StartGame.exe',
-  ].filter(Boolean);
-
-  for (const name of candidates) {
-    const full = path.join(gameRoot, name);
-    if (fs.existsSync(full)) return full;
-  }
-
-  return null;
+function resolveGameExe(gameRoot) {
+  const full = path.join(gameRoot, 'main.exe');
+  return fs.existsSync(full) ? full : null;
 }
 
 export function launchGame(gameRoot = getGameRoot()) {
-  const config = loadLauncherConfig(gameRoot);
-  const bootstrap = resolveBootstrap(gameRoot, config);
+  // Always launch the client binary directly (no StartGame bootstrap).
+  loadLauncherConfig(gameRoot);
+  const gameExe = resolveGameExe(gameRoot);
 
-  if (!bootstrap) {
+  if (!gameExe) {
     return {
       ok: false,
-      code: 'BOOTSTRAP_MISSING',
+      code: 'MAIN_MISSING',
       gameRoot,
       message:
-        `No se encontró StartGame.exe en:\n${gameRoot}\n\nColocá el launcher portable en la carpeta del cliente (junto a main.exe / StartGame.exe).`,
+        `No se encontró main.exe en:\n${gameRoot}\n\nColocá el launcher portable en la carpeta del cliente (junto a main.exe).`,
     };
   }
 
-  const child = spawn(bootstrap, [], {
+  const child = spawn(gameExe, [], {
     cwd: gameRoot,
     detached: true,
     stdio: 'ignore',
@@ -46,6 +36,7 @@ export function launchGame(gameRoot = getGameRoot()) {
   return {
     ok: true,
     code: 'LAUNCHED',
-    bootstrap,
+    bootstrap: gameExe,
+    exe: gameExe,
   };
 }
