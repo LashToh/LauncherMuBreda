@@ -11,5 +11,7 @@ dev-game-root/
 *.exe
 !build/MuBreda-Launcher.exe
 !public/**
+build/stub.rc
+build/stub-icon.o
 .vscode/
 .idea/
