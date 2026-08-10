@@ -60,11 +60,22 @@ app.whenReady().then(async () => {
   const afterEn = fs.readFileSync(path.join(root, 'LauncherOption.if'), 'utf8');
   assert.match(afterEn, /Language:0/);
 
+  const locked = await setGameLanguage('es', root);
+  assert.equal(locked.ok, false);
+  assert.equal(locked.code, 'GAME_LANG_LOCKED_EN');
+  const stillEn = fs.readFileSync(path.join(root, 'LauncherOption.if'), 'utf8');
+  assert.match(stillEn, /Language:0/);
+
+  await saveGameSettings({ language: 'pt', languageId: 2 }, root);
+  const afterSave = fs.readFileSync(path.join(root, 'LauncherOption.if'), 'utf8');
+  assert.match(afterSave, /Language:0/);
+
   console.log('smoke-test OK', {
     settings,
     resolutions: RESOLUTIONS.length,
     updateStatus: update.reason || update.remoteVersion || 'ready',
     englishLanguageId: en.languageId,
+    lockedEs: locked.code,
   });
   app.quit();
 });

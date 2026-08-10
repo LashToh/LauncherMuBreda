@@ -169,15 +169,9 @@ export async function saveGameSettings(partial, gameRoot = getGameRoot()) {
   const current = await loadGameSettings(gameRoot);
   const next = { ...current, ...partial };
 
-  if (partial.languageId !== undefined && isSafeLanguageId(partial.languageId)) {
-    next.languageId = partial.languageId;
-  } else {
-    next.languageId = isSafeLanguageId(current.languageId) ? current.languageId : 0;
-  }
-
-  if (partial.language) {
-    next.language = partial.language;
-  }
+  // This Breda S21 pack only works in English in-game. Never persist ES/PT indexes.
+  next.languageId = 0;
+  next.language = 'en';
 
   fs.writeFileSync(
     getOptionIniPath(gameRoot),
@@ -194,7 +188,7 @@ export async function saveGameSettings(partial, gameRoot = getGameRoot()) {
     serializeLauncherOption({
       resolutionIndex: next.resolutionIndex,
       windowMode: next.windowMode,
-      languageId: next.languageId,
+      languageId: 0,
       id: next.id,
     }),
     'utf8',
@@ -204,36 +198,36 @@ export async function saveGameSettings(partial, gameRoot = getGameRoot()) {
     await writeMuResolution(next.resolutionIndex);
   }
 
+  // Keep registry on Eng even when saving unrelated settings.
+  await writeMuLanguage(
+    resolveLangSelection(gameRoot, 'en', { requireFolder: true }) || 'Eng',
+  );
+
   return next;
 }
 
 /**
- * Change game + launcher language for this MuDevs S21 client:
- * - LauncherOption.if Language: 0=Eng, 1=Spn, 2=Por
- * - Registry LangSelection = Eng|Spn|Por
- * - Registry LauncherLang = English|Spanish|Portuguese
+ * Force in-game language to English only.
+ * Spn/Por break this Breda client (Skill(Kor)); ES/PT launcher UI is separate.
  */
 export async function setGameLanguage(languageCode, gameRoot = getGameRoot()) {
-  const code = String(languageCode || '').toLowerCase();
-  if (!['es', 'en', 'pt'].includes(code)) {
-    return { ok: false, message: `Idioma no soportado: ${languageCode}` };
-  }
-
-  const folder = resolveLangSelection(gameRoot, code, { requireFolder: true });
-  if (!folder) {
+  const requested = String(languageCode || '').toLowerCase();
+  if (requested && requested !== 'en') {
+    // Refuse to switch the game client off English.
     return {
       ok: false,
-      code: 'LOCAL_FOLDER_MISSING',
+      code: 'GAME_LANG_LOCKED_EN',
       message:
-        `No encontré la carpeta de idioma en Data\\Local para "${code}".\n` +
-        `Revisá que exista Eng / Spn / Por en el cliente.`,
+        'Este cliente Breda solo funciona en inglés in-game. ' +
+        'ES/PT del launcher no cambian el idioma del juego.',
+      language: 'en',
+      languageId: 0,
     };
   }
 
-  const languageId = resolveLanguageId(gameRoot, code);
-  if (!isSafeLanguageId(languageId)) {
-    return { ok: false, message: 'Language id inválido.' };
-  }
+  const folder =
+    resolveLangSelection(gameRoot, 'en', { requireFolder: true }) || 'Eng';
+  const languageId = 0;
 
   const { path: launcherOptionPath, parsed } = readLauncherOptionFile(gameRoot);
   fs.writeFileSync(
@@ -257,7 +251,7 @@ export async function setGameLanguage(languageCode, gameRoot = getGameRoot()) {
 
   return {
     ok: true,
-    language: code,
+    language: 'en',
     languageId,
     langSelection: folder,
     launcherLang: reg.launcherLang || null,
@@ -266,48 +260,8 @@ export async function setGameLanguage(languageCode, gameRoot = getGameRoot()) {
 }
 
 /**
- * Heal only when LangSelection points at Korean folder, or Language is invalid.
- * Language:0 is English — never treat it as broken.
+ * Always put the game client back on English (Language:0 + Eng).
  */
 export async function repairGameLanguage(gameRoot = getGameRoot()) {
-  const { path: launcherOptionPath, parsed } = readLauncherOptionFile(gameRoot);
-  const currentSelection = await readMuLanguage();
-  const fromSelection = detectLanguageCodeFromSelection(currentSelection);
-
-  const indexBroken = !isSafeLanguageId(parsed.languageId);
-  const selectionBroken = !currentSelection || /^kor/i.test(currentSelection);
-
-  if (!indexBroken && !selectionBroken) {
-    return {
-      ok: true,
-      repaired: false,
-      languageId: parsed.languageId,
-      langSelection: currentSelection,
-    };
-  }
-
-  let code = fromSelection;
-  if (!code || selectionBroken) {
-    code = 'en';
-  }
-
-  const expectedId = resolveLanguageId(gameRoot, code);
-  const expectedFolder =
-    resolveLangSelection(gameRoot, code, { requireFolder: true }) ||
-    resolveLangSelection(gameRoot, code);
-
-  fs.writeFileSync(
-    launcherOptionPath,
-    serializeLauncherOption({ ...parsed, languageId: expectedId }),
-    'utf8',
-  );
-  await writeMuLanguage(expectedFolder);
-
-  return {
-    ok: true,
-    repaired: true,
-    language: code,
-    languageId: expectedId,
-    langSelection: expectedFolder,
-  };
+  return setGameLanguage('en', gameRoot);
 }

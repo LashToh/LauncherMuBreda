@@ -9,8 +9,8 @@ Visual identity matches [CMSMuBreda](https://github.com/LashToh/CMSMuBreda).
 - Hero Play UI (Season 21 crimson/gold)
 - **Play** launches `main.exe` directly from the client folder
 - Settings: sound, music, resolution, window mode
-- Language buttons **ES / EN / PT** (launcher UI chrome only)
-- **Play** restores working English client keys: `Language:0` + `LangSelection=Eng`
+- Language buttons **ES / EN / PT** change **launcher UI only**
+- In-game language is **locked to English** (`Language:0` + `LangSelection=Eng`) — Spn/Por break this client pack
 - News + server status from `https://api.mubreda.net`
 - Social links (website / Discord / Instagram / Facebook)
 - Client auto-update (Play still allowed if API is down)
@@ -86,17 +86,21 @@ Icon: `build/icon.ico` (Breda **B**). If Windows packaging fails on symlinks, en
 
 See `docs/launcher-manifest.md` for the update API contract.
 
-## English broken after a launcher update?
+## English / language lock
 
-This MuDevs Season 21 client uses **`Language:0` = English** (not Korean). A bad launcher build rewrote that to `Language:1` and could also overwrite skill BMDs.
+This Breda Season 21 client pack **only works in English in-game**. Switching Spn/Por (or `Language:1/2`) triggers `Skill(Kor)` errors.
 
-**Automatic:** pressing **Play** writes `Language:0` + registry `LangSelection=Eng` again.
+The launcher:
 
-**Manual restore** (also undoes skill backups under `Data\Local\_mubreda_backup\` if present):
+- keeps ES/EN/PT for **UI chrome only**
+- always writes `Language:0` + `LangSelection=Eng` on Play / settings save
+- refuses to set the game client to Spanish or Portuguese
+
+**If English broke after trying another language**, run:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\repair-english-client.ps1 `
   -GameRoot "G:\Server Breda\MuDevs Season 21 cracked\Cliente Season 21 Beta"
 ```
 
-Then start `Main.exe` once.
+Then start `Main.exe` once (not only the launcher).
