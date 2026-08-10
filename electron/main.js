@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getAppIconPath } from './appIcon.js';
@@ -17,6 +18,17 @@ import { applyUpdate, checkForUpdates } from './updater.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function readLauncherVersion() {
+  try {
+    const pkgPath = path.join(__dirname, '..', 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    return pkg.version || '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
+const LAUNCHER_VERSION = readLauncherVersion();
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 let mainWindow = null;
 let quitting = false;
@@ -105,6 +117,7 @@ function registerIpc() {
       config,
       settings,
       version,
+      launcherVersion: LAUNCHER_VERSION,
       resolutions: RESOLUTIONS,
       defaults: DEFAULT_CONFIG,
       isDev,

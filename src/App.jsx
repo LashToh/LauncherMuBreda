@@ -30,6 +30,7 @@ export default function App() {
   const [error, setError] = useState('');
   const [updateStatus, setUpdateStatus] = useState('checking');
   const [progress, setProgress] = useState(null);
+  const [launcherVersion, setLauncherVersion] = useState('');
 
   const t = useMemo(() => getDictionary(language), [language]);
   const resolutionOptions =
@@ -54,6 +55,7 @@ export default function App() {
       setDraft(nextSettings);
       setResolutions(nextResolutions);
       setLanguage(nextConfig.language || 'es');
+      setLauncherVersion(bootstrap.launcherVersion || '');
 
       unsubscribe = window.mubreda.onUpdateProgress((payload) => {
         setProgress(payload);
@@ -137,7 +139,7 @@ export default function App() {
       <div className="launcher__vignette" aria-hidden="true" />
       <div className="launcher__embers" aria-hidden="true" />
 
-      <TitleBar />
+      <TitleBar version={launcherVersion} />
 
       <main className="launcher__main">
         <div className="launcher__content">

@@ -1,6 +1,6 @@
 import './TitleBar.scss';
 
-export default function TitleBar() {
+export default function TitleBar({ version }) {
   async function minimize() {
     if (window.mubreda?.windowMinimize) {
       await window.mubreda.windowMinimize();
@@ -19,7 +19,9 @@ export default function TitleBar() {
 
   return (
     <header className="titlebar">
-      <div className="titlebar__drag" />
+      <div className="titlebar__drag">
+        {version ? <span className="titlebar__version">v{version}</span> : null}
+      </div>
       <div className="titlebar__controls">
         <button
           type="button"
