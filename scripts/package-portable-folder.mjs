@@ -61,10 +61,12 @@ if (path.resolve(appSource) !== path.resolve(appTarget)) {
 // Stub stays loose next to Main.exe
 fs.copyFileSync(stubSrc, path.join(dropinDir, 'MuBreda-Launcher.exe'));
 
-// Quick recovery if Language: gets rewritten away from English.
-const fixBat = path.join(root, 'scripts', 'fix-english.bat');
-if (fs.existsSync(fixBat)) {
-  fs.copyFileSync(fixBat, path.join(dropinDir, 'fix-english.bat'));
+// Quick recovery / play without Electron language bugs.
+for (const name of ['fix-english.bat', 'Play-English.bat']) {
+  const src = path.join(root, 'scripts', name);
+  if (fs.existsSync(src)) {
+    fs.copyFileSync(src, path.join(dropinDir, name));
+  }
 }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));

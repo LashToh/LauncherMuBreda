@@ -208,12 +208,11 @@ export async function saveGameSettings(partial, gameRoot = getGameRoot()) {
 
 /**
  * Force in-game language to English only.
- * Spn/Por break this Breda client (Skill(Kor)); ES/PT launcher UI is separate.
+ * Spn/Por break this Breda client (Skill(Kor)); raw-patch Language:0 every time.
  */
 export async function setGameLanguage(languageCode, gameRoot = getGameRoot()) {
   const requested = String(languageCode || '').toLowerCase();
   if (requested && requested !== 'en') {
-    // Refuse to switch the game client off English.
     return {
       ok: false,
       code: 'GAME_LANG_LOCKED_EN',
@@ -228,16 +227,21 @@ export async function setGameLanguage(languageCode, gameRoot = getGameRoot()) {
   const folder =
     resolveLangSelection(gameRoot, 'en', { requireFolder: true }) || 'Eng';
   const languageId = 0;
+  const launcherOptionPath = getLauncherOptionPath(gameRoot);
 
-  const { path: launcherOptionPath, parsed } = readLauncherOptionFile(gameRoot);
-  fs.writeFileSync(
-    launcherOptionPath,
-    serializeLauncherOption({
-      ...parsed,
-      languageId,
-    }),
-    'utf8',
-  );
+  // Raw patch — never trust callers to pass a non-zero Language id again.
+  let raw = '';
+  if (fs.existsSync(launcherOptionPath)) {
+    raw = fs.readFileSync(launcherOptionPath, 'utf8');
+  }
+  if (/^\s*Language\s*:/m.test(raw)) {
+    raw = raw.replace(/^\s*Language\s*:.*$/m, 'Language:0');
+  } else if (raw.trim()) {
+    raw = `${raw.replace(/\s*$/, '')}\nLanguage:0\n`;
+  } else {
+    raw = 'DevModeIndex:8\nWindowMode:1\nID:\nLanguage:0\n';
+  }
+  fs.writeFileSync(launcherOptionPath, raw, 'utf8');
 
   const reg = await writeMuLanguage(folder);
   if (!reg.ok && !reg.skipped) {

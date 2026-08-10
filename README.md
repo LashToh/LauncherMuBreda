@@ -96,13 +96,13 @@ The launcher:
 - always writes `Language:0` + `LangSelection=Eng` on Play / boot / settings save
 - ships `fix-english.bat` in the client drop-in folder
 
-**If English broke** (often `Language:1` + `LangSelection=Eng` from an old launcher), run either:
+**If English broke**, set `Language:0` again, or use `Play-English.bat` next to `Main.exe` (forces English and starts the game — skip the old Electron launcher):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\repair-english-client.ps1 `
-  -GameRoot "G:\Server Breda\MuDevs Season 21 cracked\Cliente Season 21 Beta"
+(Get-Content ".\LauncherOption.if") -replace '^\s*Language\s*:.*','Language:0' | Set-Content ".\LauncherOption.if" -Encoding ASCII
+Set-ItemProperty "HKCU:\Software\Webzen\Mu\Config" LangSelection Eng
+Set-ItemProperty "HKCU:\Software\Webzen\Mu\Config" LauncherLang English
+Get-Content ".\LauncherOption.if"
 ```
 
-Or copy `scripts/fix-english.bat` next to `Main.exe` and double-click it.
-
-Then start `Main.exe`. Until you rebuild (`npm run dist`), **do not** use an old `MuBreda-Launcher` — those builds rewrite `Language:1` and break English again.
+**Until you replace the launcher with 1.2.0+**, rename `MuBreda-Launcher.exe` so you cannot open the old build by mistake, and play with `Play-English.bat` or `Main.exe`.
