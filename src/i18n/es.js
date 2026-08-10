@@ -31,5 +31,7 @@ export default {
   on: 'On',
   off: 'Off',
   launchError: 'No se pudo iniciar el juego',
+  languageMissing:
+    'Ese idioma no está en Data\\Local del cliente. Revisá las carpetas Eng / Spn / Por.',
   saved: 'Guardado',
 };

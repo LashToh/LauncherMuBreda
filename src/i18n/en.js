@@ -31,5 +31,7 @@ export default {
   on: 'On',
   off: 'Off',
   launchError: 'Could not start the game',
+  languageMissing:
+    'That language folder is missing under Data\\Local. Check Eng / Spn / Por.',
   saved: 'Saved',
 };

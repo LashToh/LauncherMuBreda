@@ -21,6 +21,7 @@ export default function App() {
   const [settings, setSettings] = useState(FALLBACK_SETTINGS);
   const [resolutions, setResolutions] = useState(FALLBACK_RESOLUTIONS);
   const [language, setLanguage] = useState('es');
+  const [availableLanguages, setAvailableLanguages] = useState([]);
   const [news, setNews] = useState([]);
   const [server, setServer] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -53,6 +54,7 @@ export default function App() {
       setDraft(nextSettings);
       setResolutions(nextResolutions);
       setLanguage(nextSettings.language || nextConfig.language || 'es');
+      setAvailableLanguages(nextSettings.availableLanguages || []);
 
       unsubscribe = window.mubreda.onUpdateProgress((payload) => {
         setProgress(payload);
@@ -99,10 +101,31 @@ export default function App() {
   async function handleLanguageChange(code) {
     setLanguage(code);
     setError('');
-    // UI language only — do not rewrite client Language/LangSelection here.
-    // Touching those values was loading Korean skill scripts (Skill(Kor)).
     await window.mubreda?.saveLauncherConfig({ language: code });
     setConfig((prev) => ({ ...prev, language: code }));
+
+    const result = await window.mubreda?.setGameLanguage?.(code);
+    if (result?.availableLanguages) {
+      setAvailableLanguages(result.availableLanguages);
+    }
+    if (result && !result.ok) {
+      setError(result.message || t.languageMissing);
+      return;
+    }
+    if (result?.ok) {
+      setSettings((prev) => ({
+        ...prev,
+        language: result.language,
+        languageId: result.languageId,
+        langSelection: result.langSelection,
+      }));
+      setDraft((prev) => ({
+        ...prev,
+        language: result.language,
+        languageId: result.languageId,
+        langSelection: result.langSelection,
+      }));
+    }
   }
 
   async function handleSaveSettings() {
@@ -197,7 +220,11 @@ export default function App() {
         </div>
 
         <aside className="launcher__right">
-          <LanguageSwitch value={language} onChange={handleLanguageChange} />
+          <LanguageSwitch
+            value={language}
+            onChange={handleLanguageChange}
+            available={availableLanguages}
+          />
           <div className="launcher__news">
             <NewsPanel t={t} items={news} />
           </div>

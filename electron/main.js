@@ -8,7 +8,7 @@ import {
   loadLocalVersion,
   saveLauncherConfig,
 } from './configStore.js';
-import { loadGameSettings, saveGameSettings, repairGameLanguage } from './gameSettings.js';
+import { loadGameSettings, saveGameSettings, repairGameLanguage, setGameLanguage } from './gameSettings.js';
 import { launchGame } from './launcher.js';
 import { getGameRoot, getLauncherDataDir, ensureDir } from './paths.js';
 import { createTray, destroyTray, hideToTray } from './tray.js';
@@ -116,6 +116,7 @@ function registerIpc() {
   ipcMain.handle('settings:get', async () => loadGameSettings());
   ipcMain.handle('settings:save', async (_e, partial) => saveGameSettings(partial || {}));
   ipcMain.handle('config:save', async (_e, partial) => saveLauncherConfig(partial || {}));
+  ipcMain.handle('language:set', async (_e, code) => setGameLanguage(code));
 
   ipcMain.handle('game:launch', async () => {
     try {

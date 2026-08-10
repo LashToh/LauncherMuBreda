@@ -1,8 +1,11 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import {
   detectLanguageCodeFromSelection,
   isSafeLanguageId,
+  listAvailableUiLanguages,
   resolveLangSelection,
+  resolveLanguageId,
 } from './language.js';
 import {
   getGameRoot,
@@ -99,17 +102,26 @@ function serializeOptionIni(settings) {
   ].join('\n');
 }
 
+function readLauncherOptionFile(gameRoot) {
+  const launcherOptionPath = getLauncherOptionPath(gameRoot);
+  const raw = fs.existsSync(launcherOptionPath)
+    ? fs.readFileSync(launcherOptionPath, 'utf8')
+    : '';
+  return {
+    path: launcherOptionPath,
+    parsed: parseLauncherOption(
+      raw || 'DevModeIndex:8\nWindowMode:1\nID:\nLanguage:1\n',
+    ),
+  };
+}
+
 export async function loadGameSettings(gameRoot = getGameRoot()) {
   const optionPath = getOptionIniPath(gameRoot);
-  const launcherOptionPath = getLauncherOptionPath(gameRoot);
+  const { parsed: launcherOption } = readLauncherOptionFile(gameRoot);
 
   const option = fs.existsSync(optionPath)
     ? parseOptionIni(fs.readFileSync(optionPath, 'utf8'))
     : parseOptionIni('');
-
-  const launcherOption = fs.existsSync(launcherOptionPath)
-    ? parseLauncherOption(fs.readFileSync(launcherOptionPath, 'utf8'))
-    : parseLauncherOption('DevModeIndex:8\nWindowMode:1\nID:\nLanguage:1\n');
 
   let registryResolution = null;
   let registryLang = null;
@@ -146,6 +158,8 @@ export async function loadGameSettings(gameRoot = getGameRoot()) {
     windowMode: launcherOption.windowMode,
     languageId,
     language,
+    langSelection: registryLang || null,
+    availableLanguages: listAvailableUiLanguages(gameRoot),
     id: launcherOption.id,
   };
 }
@@ -154,7 +168,6 @@ export async function saveGameSettings(partial, gameRoot = getGameRoot()) {
   const current = await loadGameSettings(gameRoot);
   const next = { ...current, ...partial };
 
-  // Preserve client language index unless an explicit safe id is provided.
   if (partial.languageId !== undefined && isSafeLanguageId(partial.languageId)) {
     next.languageId = partial.languageId;
   } else {
@@ -194,45 +207,100 @@ export async function saveGameSettings(partial, gameRoot = getGameRoot()) {
 }
 
 /**
- * Force client off Korean scripts.
- * Uses Language:1 + LangSelection Eng/Spn (prefer Spn if Local folder exists).
+ * Change game + launcher language safely.
+ * Requires a real Data/Local/<Eng|Spn|Por|...> folder.
  */
-export async function repairGameLanguage(gameRoot = getGameRoot()) {
-  const launcherOptionPath = getLauncherOptionPath(gameRoot);
-  const raw = fs.existsSync(launcherOptionPath)
-    ? fs.readFileSync(launcherOptionPath, 'utf8')
-    : '';
-  const parsed = parseLauncherOption(
-    raw || 'DevModeIndex:8\nWindowMode:1\nID:\nLanguage:1\n',
+export async function setGameLanguage(languageCode, gameRoot = getGameRoot()) {
+  const code = String(languageCode || '').toLowerCase();
+  if (!['es', 'en', 'pt'].includes(code)) {
+    return { ok: false, message: `Idioma no soportado: ${languageCode}` };
+  }
+
+  const folder = resolveLangSelection(gameRoot, code, { requireFolder: true });
+  if (!folder) {
+    return {
+      ok: false,
+      code: 'LOCAL_FOLDER_MISSING',
+      message:
+        `No encontré la carpeta de idioma en Data\\Local para "${code}".\n` +
+        `Revisá que exista Eng / Spn (o Esp) / Por en el cliente.`,
+    };
+  }
+
+  const languageId = resolveLanguageId(gameRoot, code);
+  if (!isSafeLanguageId(languageId)) {
+    return { ok: false, message: 'Language id inválido (no se permite Korean/0).' };
+  }
+
+  const { path: launcherOptionPath, parsed } = readLauncherOptionFile(gameRoot);
+  fs.writeFileSync(
+    launcherOptionPath,
+    serializeLauncherOption({
+      ...parsed,
+      languageId,
+    }),
+    'utf8',
   );
 
-  const needsRepair =
-    !isSafeLanguageId(parsed.languageId) || Number(parsed.languageId) === 0;
-
-  const languageId = needsRepair ? 1 : parsed.languageId;
-  if (needsRepair || Number(parsed.languageId) !== Number(languageId)) {
-    fs.writeFileSync(
-      launcherOptionPath,
-      serializeLauncherOption({ ...parsed, languageId }),
-      'utf8',
-    );
-  }
-
-  // Prefer Spanish Local folder for Breda; fall back to English.
-  let selection = resolveLangSelection(gameRoot, 'es');
-  const localPath = path.join(gameRoot, 'Data', 'Local', selection);
-  if (!fs.existsSync(localPath)) {
-    selection = resolveLangSelection(gameRoot, 'en');
-  }
-
-  const currentSelection = await readMuLanguage();
-  if (!currentSelection || /^kor/i.test(currentSelection) || needsRepair) {
-    await writeMuLanguage(selection);
+  const reg = await writeMuLanguage(folder);
+  if (!reg.ok && !reg.skipped) {
+    return {
+      ok: false,
+      message: `No se pudo escribir LangSelection: ${reg.message}`,
+      folder,
+      languageId,
+    };
   }
 
   return {
     ok: true,
-    repaired: needsRepair,
+    language: code,
+    languageId,
+    langSelection: folder,
+    availableLanguages: listAvailableUiLanguages(gameRoot),
+  };
+}
+
+/**
+ * Force client off Korean scripts only when needed.
+ */
+export async function repairGameLanguage(gameRoot = getGameRoot()) {
+  const { path: launcherOptionPath, parsed } = readLauncherOptionFile(gameRoot);
+  const currentSelection = await readMuLanguage();
+
+  const needsRepair =
+    !isSafeLanguageId(parsed.languageId) ||
+    Number(parsed.languageId) === 0 ||
+    (currentSelection && /^kor/i.test(currentSelection));
+
+  if (!needsRepair) {
+    return {
+      ok: true,
+      repaired: false,
+      languageId: parsed.languageId,
+      langSelection: currentSelection,
+    };
+  }
+
+  // Prefer Spanish Local folder for Breda; fall back to English.
+  let selection = resolveLangSelection(gameRoot, 'es', { requireFolder: true });
+  let code = 'es';
+  if (!selection) {
+    selection = resolveLangSelection(gameRoot, 'en', { requireFolder: true }) || 'Eng';
+    code = 'en';
+  }
+
+  const languageId = resolveLanguageId(gameRoot, code);
+  fs.writeFileSync(
+    launcherOptionPath,
+    serializeLauncherOption({ ...parsed, languageId }),
+    'utf8',
+  );
+  await writeMuLanguage(selection);
+
+  return {
+    ok: true,
+    repaired: true,
     languageId,
     langSelection: selection,
   };

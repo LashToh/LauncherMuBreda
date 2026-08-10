@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { loadLauncherConfig } from './configStore.js';
 
 /**
  * Prefer exact client Local folder names when present.
@@ -17,7 +18,14 @@ const FOLDER_TO_CODE = Object.fromEntries(
   ),
 );
 
-function listLocalFolders(gameRoot) {
+/** Default MuDevs indexes with Korean reserved at 0. Overridable via config. */
+const DEFAULT_GAME_LANGUAGE_IDS = {
+  en: 1,
+  pt: 2,
+  es: 3,
+};
+
+export function listLocalFolders(gameRoot) {
   const localDir = path.join(gameRoot, 'Data', 'Local');
   if (!fs.existsSync(localDir)) return [];
   try {
@@ -31,7 +39,7 @@ function listLocalFolders(gameRoot) {
   }
 }
 
-export function resolveLangSelection(gameRoot, languageCode) {
+export function resolveLangSelection(gameRoot, languageCode, { requireFolder = false } = {}) {
   const folders = listLocalFolders(gameRoot);
   const folderMap = new Map(folders.map((name) => [name.toLowerCase(), name]));
   const candidates = CODE_TO_FOLDER_CANDIDATES[languageCode] || [];
@@ -41,7 +49,8 @@ export function resolveLangSelection(gameRoot, languageCode) {
     if (hit) return hit;
   }
 
-  // Fallbacks when Local folders are missing/unreadable.
+  if (requireFolder) return null;
+
   if (languageCode === 'en') return 'Eng';
   if (languageCode === 'pt') return 'Por';
   return 'Spn';
@@ -52,19 +61,36 @@ export function detectLanguageCodeFromSelection(selection) {
   return FOLDER_TO_CODE[String(selection).toLowerCase()] || null;
 }
 
-/**
- * MuDevs builds vary. Prefer Eng/Spn/Por order after Korean slot 0.
- * If Latam-style 0/1/2 without Korean is detected via folders only, still
- * avoid writing 0 from the launcher.
- */
-export function resolveLanguageId(languageCode) {
-  if (languageCode === 'en') return 1;
-  if (languageCode === 'pt') return 2;
-  if (languageCode === 'es') return 3;
-  return 1;
+export function getGameLanguageIds(gameRoot) {
+  const config = loadLauncherConfig(gameRoot);
+  return {
+    ...DEFAULT_GAME_LANGUAGE_IDS,
+    ...(config.gameLanguageIds || {}),
+  };
+}
+
+export function resolveLanguageId(gameRoot, languageCode) {
+  const map = getGameLanguageIds(gameRoot);
+  const id = Number(map[languageCode]);
+  if (!Number.isFinite(id) || id <= 0) {
+    return DEFAULT_GAME_LANGUAGE_IDS[languageCode] || 1;
+  }
+  return id;
 }
 
 export function isSafeLanguageId(languageId) {
   const n = Number(languageId);
   return Number.isFinite(n) && n > 0;
+}
+
+export function listAvailableUiLanguages(gameRoot) {
+  return ['es', 'en', 'pt'].map((code) => {
+    const folder = resolveLangSelection(gameRoot, code, { requireFolder: true });
+    return {
+      code,
+      folder,
+      available: Boolean(folder),
+      languageId: resolveLanguageId(gameRoot, code),
+    };
+  });
 }
