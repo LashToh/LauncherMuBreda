@@ -9,8 +9,8 @@ Visual identity matches [CMSMuBreda](https://github.com/LashToh/CMSMuBreda).
 - Hero Play UI (Season 21 crimson/gold)
 - **Play** launches `main.exe` directly from the client folder
 - Settings: sound, music, resolution, window mode
-- In-game language is **locked to English** (`Language:0` + `LangSelection=Eng`)
-- No ES/EN/PT language switch in the UI (Spn/Por break this client pack)
+- **Never changes game language** (`Language:` / `LangSelection` left alone)
+- No ES/EN/PT language switch (this client pack only works in English in-game)
 - News + server status from `https://api.mubreda.net`
 - Social links (website / Discord / Instagram / Facebook)
 - Client auto-update (Play still allowed if API is down)
@@ -86,17 +86,11 @@ Icon: `build/icon.ico` (Breda **B**). If Windows packaging fails on symlinks, en
 
 See `docs/launcher-manifest.md` for the update API contract.
 
-## English / language lock
+## Game language (English only on this pack)
 
-This Breda Season 21 client pack **only works in English in-game**. Switching Spn/Por (or `Language:1/2`) triggers `Skill(Kor)` errors.
+This Breda Season 21 client pack **only works in English in-game**. The launcher **never** writes `Language:` or registry `LangSelection`.
 
-The launcher:
-
-- has **no** ES/EN/PT language switch (removed — it kept breaking the game client)
-- always writes `Language:0` + `LangSelection=Eng` on Play / boot / settings save
-- ships `fix-english.bat` in the client drop-in folder
-
-**If English broke**, set `Language:0` again, or use `Play-English.bat` next to `Main.exe` (forces English and starts the game — skip the old Electron launcher):
+Set English once (or use `Play-English.bat` / `fix-english.bat` from the drop-in):
 
 ```powershell
 (Get-Content ".\LauncherOption.if") -replace '^\s*Language\s*:.*','Language:0' | Set-Content ".\LauncherOption.if" -Encoding ASCII
@@ -105,4 +99,6 @@ Set-ItemProperty "HKCU:\Software\Webzen\Mu\Config" LauncherLang English
 Get-Content ".\LauncherOption.if"
 ```
 
-**Until you replace the launcher with 1.2.0+**, rename `MuBreda-Launcher.exe` so you cannot open the old build by mistake, and play with `Play-English.bat` or `Main.exe`.
+Then use the launcher normally — Play / settings will not touch those keys.
+
+Rebuild required: `git pull` + `npm run dist` and replace `MuBreda-Launcher.exe` + `MuBreda-Launcher\` (old builds still rewrite language).

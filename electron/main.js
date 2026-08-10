@@ -8,7 +8,7 @@ import {
   loadLocalVersion,
   saveLauncherConfig,
 } from './configStore.js';
-import { loadGameSettings, saveGameSettings, setGameLanguage } from './gameSettings.js';
+import { loadGameSettings, saveGameSettings } from './gameSettings.js';
 import { launchGame } from './launcher.js';
 import { getGameRoot, getLauncherDataDir, ensureDir } from './paths.js';
 import { createTray, destroyTray, hideToTray } from './tray.js';
@@ -97,13 +97,6 @@ function registerIpc() {
     const gameRoot = getGameRoot();
     ensureDir(getLauncherDataDir(gameRoot));
     const config = { ...DEFAULT_CONFIG, ...loadLauncherConfig(gameRoot) };
-    // Old launcher builds wrote Language:1 for "English" and broke the client.
-    // Heal on every boot before UI reads settings.
-    try {
-      await setGameLanguage('en', gameRoot);
-    } catch {
-      // ignore — Play will try again
-    }
     const settings = await loadGameSettings(gameRoot);
     const version = loadLocalVersion(gameRoot);
 
@@ -121,18 +114,6 @@ function registerIpc() {
   ipcMain.handle('settings:get', async () => loadGameSettings());
   ipcMain.handle('settings:save', async (_e, partial) => saveGameSettings(partial || {}));
   ipcMain.handle('config:save', async (_e, partial) => saveLauncherConfig(partial || {}));
-
-  // Always English in-game. Used when UI language buttons change (heal only).
-  ipcMain.handle('game:ensureEnglish', async () => {
-    try {
-      return await setGameLanguage('en');
-    } catch (error) {
-      return {
-        ok: false,
-        message: error?.message || 'No se pudo forzar Language:0 / Eng.',
-      };
-    }
-  });
 
   ipcMain.handle('game:launch', async () => {
     try {

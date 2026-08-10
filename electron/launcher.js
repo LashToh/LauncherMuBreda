@@ -3,7 +3,6 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { shell } from 'electron';
 import { loadLauncherConfig } from './configStore.js';
-import { setGameLanguage } from './gameSettings.js';
 import { getGameRoot } from './paths.js';
 
 /** Resolve Main.exe / main.exe with the real casing from disk. */
@@ -62,17 +61,7 @@ export async function launchGame(gameRoot = getGameRoot()) {
     };
   }
 
-  // This MuDevs client uses Language:0 = English (not Korean).
-  // Earlier launcher builds rewrote that to Language:1 and broke EN — put it back.
-  let language = null;
-  try {
-    language = await setGameLanguage('en', gameRoot);
-  } catch (error) {
-    language = {
-      ok: false,
-      message: error?.message || 'No se pudo restaurar Language:0 / LangSelection=Eng.',
-    };
-  }
+  // Do not touch Language: / LangSelection — leave English (or whatever) as-is.
 
   // Prefer Electron shell.openPath (handles permissions / associations better on Windows).
   try {
@@ -83,7 +72,6 @@ export async function launchGame(gameRoot = getGameRoot()) {
         code: 'LAUNCHED',
         exe: gameExe,
         method: 'openPath',
-        language,
       };
     }
   } catch {
@@ -97,7 +85,6 @@ export async function launchGame(gameRoot = getGameRoot()) {
       code: 'LAUNCHED',
       exe: gameExe,
       method: 'cmd-start',
-      language,
     };
   }
 
@@ -106,7 +93,6 @@ export async function launchGame(gameRoot = getGameRoot()) {
     code: 'LAUNCH_EACCES',
     gameRoot,
     exe: gameExe,
-    language,
     message:
       `No se pudo abrir Main.exe (permiso denegado).\n\n` +
       `Probá:\n` +

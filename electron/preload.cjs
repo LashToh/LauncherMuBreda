@@ -5,7 +5,6 @@ contextBridge.exposeInMainWorld('mubreda', {
   getGameSettings: () => ipcRenderer.invoke('settings:get'),
   saveGameSettings: (partial) => ipcRenderer.invoke('settings:save', partial),
   saveLauncherConfig: (partial) => ipcRenderer.invoke('config:save', partial),
-  ensureGameEnglish: () => ipcRenderer.invoke('game:ensureEnglish'),
   launchGame: () => ipcRenderer.invoke('game:launch'),
   checkUpdates: () => ipcRenderer.invoke('update:check'),
   applyUpdate: () => ipcRenderer.invoke('update:apply'),
