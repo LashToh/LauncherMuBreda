@@ -96,11 +96,13 @@ The launcher:
 - always writes `Language:0` + `LangSelection=Eng` on Play / settings save
 - refuses to set the game client to Spanish or Portuguese
 
-**If English broke after trying another language**, run:
+**If English broke** (often `Language:1` + `LangSelection=Eng` from an old launcher), run either:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\repair-english-client.ps1 `
   -GameRoot "G:\Server Breda\MuDevs Season 21 cracked\Cliente Season 21 Beta"
 ```
 
-Then start `Main.exe` once (not only the launcher).
+Or copy `scripts/fix-english.bat` next to `Main.exe` and double-click it.
+
+Then start `Main.exe`. Until you rebuild (`npm run dist`), **do not** use an old `MuBreda-Launcher` — those builds rewrite `Language:1` and break English again.
