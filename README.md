@@ -9,7 +9,7 @@ Visual identity matches [CMSMuBreda](https://github.com/LashToh/CMSMuBreda).
 - Hero Play UI (Season 21 crimson/gold)
 - **Play** launches `main.exe` directly from the client folder
 - Settings: sound, music, resolution, window mode
-- Language buttons **ES / EN / PT** (launcher UI + game `LauncherOption.if`)
+- Language buttons **ES / EN / PT** (launcher UI only; game language stays as configured in the client)
 - News + server status from `https://api.mubreda.net`
 - Social links (website / Discord / Instagram / Facebook)
 - Client auto-update (Play still allowed if API is down)

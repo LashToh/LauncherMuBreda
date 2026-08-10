@@ -1,6 +1,6 @@
 {
   "name": "launcher-mubreda",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "private": true,
   "description": "MU Breda Season 21 — Premium desktop launcher",
   "main": "electron/main.js",

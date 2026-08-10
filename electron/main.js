@@ -8,7 +8,7 @@ import {
   loadLocalVersion,
   saveLauncherConfig,
 } from './configStore.js';
-import { loadGameSettings, saveGameSettings, repairGameLanguage, setGameLanguage } from './gameSettings.js';
+import { loadGameSettings, saveGameSettings } from './gameSettings.js';
 import { launchGame } from './launcher.js';
 import { getGameRoot, getLauncherDataDir, ensureDir } from './paths.js';
 import { createTray, destroyTray, hideToTray } from './tray.js';
@@ -96,8 +96,6 @@ function registerIpc() {
   ipcMain.handle('bootstrap:get', async () => {
     const gameRoot = getGameRoot();
     ensureDir(getLauncherDataDir(gameRoot));
-    // Fix Language:0 / Kor left by older builds before the UI loads.
-    await repairGameLanguage(gameRoot).catch(() => null);
     const config = { ...DEFAULT_CONFIG, ...loadLauncherConfig(gameRoot) };
     const settings = await loadGameSettings(gameRoot);
     const version = loadLocalVersion(gameRoot);
@@ -116,11 +114,9 @@ function registerIpc() {
   ipcMain.handle('settings:get', async () => loadGameSettings());
   ipcMain.handle('settings:save', async (_e, partial) => saveGameSettings(partial || {}));
   ipcMain.handle('config:save', async (_e, partial) => saveLauncherConfig(partial || {}));
-  ipcMain.handle('language:set', async (_e, code) => setGameLanguage(code));
 
   ipcMain.handle('game:launch', async () => {
     try {
-      await repairGameLanguage().catch(() => null);
       return await launchGame();
     } catch (error) {
       return {

@@ -21,7 +21,6 @@ export default function App() {
   const [settings, setSettings] = useState(FALLBACK_SETTINGS);
   const [resolutions, setResolutions] = useState(FALLBACK_RESOLUTIONS);
   const [language, setLanguage] = useState('es');
-  const [availableLanguages, setAvailableLanguages] = useState([]);
   const [news, setNews] = useState([]);
   const [server, setServer] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -53,8 +52,7 @@ export default function App() {
       setSettings(nextSettings);
       setDraft(nextSettings);
       setResolutions(nextResolutions);
-      setLanguage(nextSettings.language || nextConfig.language || 'es');
-      setAvailableLanguages(nextSettings.availableLanguages || []);
+      setLanguage(nextConfig.language || 'es');
 
       unsubscribe = window.mubreda.onUpdateProgress((payload) => {
         setProgress(payload);
@@ -101,31 +99,9 @@ export default function App() {
   async function handleLanguageChange(code) {
     setLanguage(code);
     setError('');
+    // Only launcher UI language — never touch client Language/LangSelection.
     await window.mubreda?.saveLauncherConfig({ language: code });
     setConfig((prev) => ({ ...prev, language: code }));
-
-    const result = await window.mubreda?.setGameLanguage?.(code);
-    if (result?.availableLanguages) {
-      setAvailableLanguages(result.availableLanguages);
-    }
-    if (result && !result.ok) {
-      setError(result.message || t.languageMissing);
-      return;
-    }
-    if (result?.ok) {
-      setSettings((prev) => ({
-        ...prev,
-        language: result.language,
-        languageId: result.languageId,
-        langSelection: result.langSelection,
-      }));
-      setDraft((prev) => ({
-        ...prev,
-        language: result.language,
-        languageId: result.languageId,
-        langSelection: result.langSelection,
-      }));
-    }
   }
 
   async function handleSaveSettings() {
@@ -133,7 +109,6 @@ export default function App() {
     if (saved) {
       setSettings(saved);
       setDraft(saved);
-      if (saved.language) setLanguage(saved.language);
     }
     setSettingsOpen(false);
   }
@@ -220,11 +195,7 @@ export default function App() {
         </div>
 
         <aside className="launcher__right">
-          <LanguageSwitch
-            value={language}
-            onChange={handleLanguageChange}
-            available={availableLanguages}
-          />
+          <LanguageSwitch value={language} onChange={handleLanguageChange} />
           <div className="launcher__news">
             <NewsPanel t={t} items={news} />
           </div>
