@@ -24,12 +24,16 @@ export const RESOLUTIONS = [
   { index: 8, label: '1920×1080', registry: 8 },
 ];
 
-/** Matches MuDevs / common client language order. */
+/**
+ * MuDevs / Webzen language indexes.
+ * 0 = Korean (broken / unused on Breda) — never write this from the launcher.
+ * 1 = English, 2 = Spanish, 3 = Portuguese
+ */
 export const GAME_LANGUAGES = [
-  { id: 0, code: 'en', label: 'English' },
-  { id: 1, code: 'es', label: 'Spanish' },
-  { id: 2, code: 'pt', label: 'Portuguese' },
+  { id: 1, code: 'en', label: 'English' },
+  { id: 2, code: 'es', label: 'Spanish' },
+  { id: 3, code: 'pt', label: 'Portuguese' },
 ];
 
-export const UI_TO_GAME_LANG = { en: 0, es: 1, pt: 2 };
-export const GAME_TO_UI_LANG = { 0: 'en', 1: 'es', 2: 'pt' };
+export const UI_TO_GAME_LANG = { en: 1, es: 2, pt: 3 };
+export const GAME_TO_UI_LANG = { 1: 'en', 2: 'es', 3: 'pt' };

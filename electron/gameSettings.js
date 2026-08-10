@@ -8,13 +8,18 @@ import {
   getLauncherOptionPath,
   getOptionIniPath,
 } from './paths.js';
-import { readMuResolution, writeMuResolution } from './registry.js';
+import {
+  readMuLanguage,
+  readMuResolution,
+  writeMuLanguage,
+  writeMuResolution,
+} from './registry.js';
 
 function parseLauncherOption(raw) {
   const settings = {
     resolutionIndex: 8,
     windowMode: true,
-    languageId: 1,
+    languageId: 2, // Spanish default — never Korean (0)
     id: '',
   };
 
@@ -26,9 +31,16 @@ function parseLauncherOption(raw) {
     const key = trimmed.slice(0, idx).trim();
     const value = trimmed.slice(idx + 1).trim();
 
-    if (key === 'DevModeIndex') settings.resolutionIndex = Number(value) || 0;
+    if (key === 'DevModeIndex') {
+      const n = Number(value);
+      if (Number.isFinite(n)) settings.resolutionIndex = n;
+    }
     if (key === 'WindowMode') settings.windowMode = value === '1';
-    if (key === 'Language') settings.languageId = Number(value) || 0;
+    if (key === 'Language') {
+      const n = Number(value);
+      // Keep explicit 0 if present on disk, but launcher UI won't map it.
+      if (Number.isFinite(n)) settings.languageId = n;
+    }
     if (key === 'ID') settings.id = value;
   }
 
@@ -36,11 +48,17 @@ function parseLauncherOption(raw) {
 }
 
 function serializeLauncherOption(settings) {
+  // Guard: never persist Korean (0) from launcher-managed saves.
+  let languageId = Number(settings.languageId);
+  if (!Number.isFinite(languageId) || languageId === 0) {
+    languageId = UI_TO_GAME_LANG.es;
+  }
+
   return [
     `DevModeIndex:${settings.resolutionIndex}`,
     `WindowMode:${settings.windowMode ? 1 : 0}`,
     `ID:${settings.id || ''}`,
-    `Language:${settings.languageId}`,
+    `Language:${languageId}`,
     '',
   ].join('\n');
 }
@@ -82,6 +100,13 @@ function serializeOptionIni(settings) {
   ].join('\n');
 }
 
+function resolveUiLanguage(languageId, registryLang) {
+  if (registryLang && UI_TO_GAME_LANG[registryLang] !== undefined) {
+    return registryLang;
+  }
+  return GAME_TO_UI_LANG[languageId] || 'es';
+}
+
 export async function loadGameSettings(gameRoot = getGameRoot()) {
   const optionPath = getOptionIniPath(gameRoot);
   const launcherOptionPath = getLauncherOptionPath(gameRoot);
@@ -92,20 +117,39 @@ export async function loadGameSettings(gameRoot = getGameRoot()) {
 
   const launcherOption = fs.existsSync(launcherOptionPath)
     ? parseLauncherOption(fs.readFileSync(launcherOptionPath, 'utf8'))
-    : parseLauncherOption('DevModeIndex:8\nWindowMode:1\nID:\nLanguage:1\n');
+    : parseLauncherOption('DevModeIndex:8\nWindowMode:1\nID:\nLanguage:2\n');
 
-  // Don't stall launcher boot if registry is slow/locked.
   let registryResolution = null;
+  let registryLang = null;
   try {
-    registryResolution = await Promise.race([
-      readMuResolution(),
-      new Promise((resolve) => setTimeout(() => resolve(null), 250)),
+    [registryResolution, registryLang] = await Promise.all([
+      Promise.race([
+        readMuResolution(),
+        new Promise((resolve) => setTimeout(() => resolve(null), 250)),
+      ]),
+      Promise.race([
+        readMuLanguage(),
+        new Promise((resolve) => setTimeout(() => resolve(null), 250)),
+      ]),
     ]);
   } catch {
     registryResolution = null;
+    registryLang = null;
   }
+
   const resolutionIndex =
     registryResolution != null ? registryResolution : launcherOption.resolutionIndex;
+
+  let languageId = launcherOption.languageId;
+  if (languageId === 0) {
+    // Migrate away from Korean index left by older launcher builds.
+    languageId = UI_TO_GAME_LANG.es;
+  }
+
+  const language = resolveUiLanguage(languageId, registryLang);
+  if (UI_TO_GAME_LANG[language] !== undefined) {
+    languageId = UI_TO_GAME_LANG[language];
+  }
 
   return {
     soundOn: option.soundOn,
@@ -113,8 +157,8 @@ export async function loadGameSettings(gameRoot = getGameRoot()) {
     effect: option.effect,
     resolutionIndex,
     windowMode: launcherOption.windowMode,
-    languageId: launcherOption.languageId,
-    language: GAME_TO_UI_LANG[launcherOption.languageId] || 'es',
+    languageId,
+    language,
     id: launcherOption.id,
   };
 }
@@ -122,6 +166,13 @@ export async function loadGameSettings(gameRoot = getGameRoot()) {
 export async function saveGameSettings(partial, gameRoot = getGameRoot()) {
   const current = await loadGameSettings(gameRoot);
   const next = { ...current, ...partial };
+  const resolutionChanged =
+    partial.resolutionIndex !== undefined &&
+    Number(partial.resolutionIndex) !== Number(current.resolutionIndex);
+  const languageChanged =
+    (partial.language !== undefined && partial.language !== current.language) ||
+    (partial.languageId !== undefined &&
+      Number(partial.languageId) !== Number(current.languageId));
 
   if (partial.language && UI_TO_GAME_LANG[partial.language] !== undefined) {
     next.languageId = UI_TO_GAME_LANG[partial.language];
@@ -131,6 +182,11 @@ export async function saveGameSettings(partial, gameRoot = getGameRoot()) {
   if (partial.languageId !== undefined) {
     next.languageId = partial.languageId;
     next.language = GAME_TO_UI_LANG[partial.languageId] || next.language;
+  }
+
+  // Never persist Korean (0).
+  if (!next.languageId || next.languageId === 0) {
+    next.languageId = UI_TO_GAME_LANG[next.language] || UI_TO_GAME_LANG.es;
   }
 
   fs.writeFileSync(
@@ -154,7 +210,13 @@ export async function saveGameSettings(partial, gameRoot = getGameRoot()) {
     'utf8',
   );
 
-  await writeMuResolution(next.resolutionIndex);
+  if (resolutionChanged || partial.resolutionIndex !== undefined) {
+    await writeMuResolution(next.resolutionIndex);
+  }
+
+  if (languageChanged || partial.language !== undefined) {
+    await writeMuLanguage(next.language || 'es');
+  }
 
   return next;
 }
