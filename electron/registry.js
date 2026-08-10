@@ -5,13 +5,6 @@ import { RESOLUTIONS } from './defaults.js';
 const execFileAsync = promisify(execFile);
 const REG_KEY = 'HKCU\\Software\\Webzen\\Mu\\Config';
 
-/** Webzen / MuDevs LangSelection string values. */
-export const LANG_SELECTION = {
-  en: 'Eng',
-  es: 'Spn',
-  pt: 'Por',
-};
-
 export function resolutionRegistryValue(resolutionIndex) {
   const match = RESOLUTIONS.find((item) => item.index === Number(resolutionIndex));
   return match?.registry ?? Number(resolutionIndex);
@@ -45,21 +38,22 @@ export async function writeMuResolution(resolutionIndex) {
   }
 }
 
-export async function writeMuLanguage(languageCode) {
+/** @param {string} selection Folder/registry value such as Eng, Spn, Por */
+export async function writeMuLanguage(selection) {
   if (process.platform !== 'win32') {
     return { ok: true, skipped: true, reason: 'NOT_WINDOWS' };
   }
 
-  const selection = LANG_SELECTION[languageCode];
-  if (!selection) {
-    return { ok: false, message: `Unsupported language: ${languageCode}` };
+  const value = String(selection || '').trim();
+  if (!value || /^kor/i.test(value)) {
+    return { ok: false, message: 'Refusing to write Korean LangSelection' };
   }
 
   try {
-    await regAdd('LangSelection', 'REG_SZ', selection);
-    return { ok: true, value: selection };
+    await regAdd('LangSelection', 'REG_SZ', value);
+    return { ok: true, value };
   } catch (error) {
-    return { ok: false, message: error.message, value: selection };
+    return { ok: false, message: error.message, value };
   }
 }
 
@@ -90,10 +84,7 @@ export async function readMuLanguage() {
       'LangSelection',
     ]);
     const match = stdout.match(/LangSelection\s+REG_SZ\s+(\S+)/);
-    if (!match) return null;
-    const value = match[1];
-    const entry = Object.entries(LANG_SELECTION).find(([, v]) => v === value);
-    return entry ? entry[0] : null;
+    return match ? match[1] : null;
   } catch {
     return null;
   }

@@ -25,15 +25,14 @@ export const RESOLUTIONS = [
 ];
 
 /**
- * MuDevs / Webzen language indexes.
- * 0 = Korean (broken / unused on Breda) — never write this from the launcher.
- * 1 = English, 2 = Spanish, 3 = Portuguese
+ * Display mapping only. Game client language is repaired separately and is
+ * NOT rewritten when switching launcher UI language (avoids Skill(Kor) spam).
  */
 export const GAME_LANGUAGES = [
   { id: 1, code: 'en', label: 'English' },
-  { id: 2, code: 'es', label: 'Spanish' },
-  { id: 3, code: 'pt', label: 'Portuguese' },
+  { id: 2, code: 'pt', label: 'Portuguese' },
+  { id: 3, code: 'es', label: 'Spanish' },
 ];
 
-export const UI_TO_GAME_LANG = { en: 1, es: 2, pt: 3 };
-export const GAME_TO_UI_LANG = { 1: 'en', 2: 'es', 3: 'pt' };
+export const UI_TO_GAME_LANG = { en: 1, pt: 2, es: 3 };
+export const GAME_TO_UI_LANG = { 1: 'en', 2: 'pt', 3: 'es' };

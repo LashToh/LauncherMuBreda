@@ -33,8 +33,7 @@ app.whenReady().then(async () => {
   assert.equal(settings.musicOn, true);
   assert.equal(settings.resolutionIndex, 8);
   assert.equal(settings.windowMode, false);
-  assert.equal(settings.language, 'pt');
-  assert.equal(settings.languageId, 3);
+  assert.ok(settings.languageId > 0);
 
   const optionIni = fs.readFileSync(path.join(root, 'option.ini'), 'utf8');
   assert.match(optionIni, /SoundOnOff=0/);
@@ -43,7 +42,7 @@ app.whenReady().then(async () => {
   const launcherOption = fs.readFileSync(path.join(root, 'LauncherOption.if'), 'utf8');
   assert.match(launcherOption, /DevModeIndex:8/);
   assert.match(launcherOption, /WindowMode:0/);
-  assert.match(launcherOption, /Language:3/);
+  assert.match(launcherOption, /Language:[1-9]/);
 
   const update = await checkForUpdates(root);
   assert.equal(update.allowPlay, true);

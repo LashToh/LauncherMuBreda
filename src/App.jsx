@@ -99,11 +99,8 @@ export default function App() {
   async function handleLanguageChange(code) {
     setLanguage(code);
     setError('');
-    const saved = await window.mubreda?.saveGameSettings({ language: code });
-    if (saved) {
-      setSettings((prev) => ({ ...prev, ...saved }));
-      setDraft((prev) => ({ ...prev, ...saved }));
-    }
+    // UI language only — do not rewrite client Language/LangSelection here.
+    // Touching those values was loading Korean skill scripts (Skill(Kor)).
     await window.mubreda?.saveLauncherConfig({ language: code });
     setConfig((prev) => ({ ...prev, language: code }));
   }
