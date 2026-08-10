@@ -208,7 +208,9 @@ export async function saveGameSettings(partial, gameRoot = getGameRoot()) {
 
 /**
  * Change game + launcher language safely.
- * Requires a real Data/Local/<Eng|Spn|Por|...> folder.
+ * Uses LangSelection = Eng/Spn/Por (matches Data\\Local).
+ * Does NOT rewrite Language: index by default — wrong indexes were
+ * loading Korean scripts. Optional gameLanguageIds enables index writes.
  */
 export async function setGameLanguage(languageCode, gameRoot = getGameRoot()) {
   const code = String(languageCode || '').toLowerCase();
@@ -223,24 +225,39 @@ export async function setGameLanguage(languageCode, gameRoot = getGameRoot()) {
       code: 'LOCAL_FOLDER_MISSING',
       message:
         `No encontré la carpeta de idioma en Data\\Local para "${code}".\n` +
-        `Revisá que exista Eng / Spn (o Esp) / Por en el cliente.`,
+        `Revisá que exista Eng / Spn / Por en el cliente.`,
     };
   }
 
-  const languageId = resolveLanguageId(gameRoot, code);
-  if (!isSafeLanguageId(languageId)) {
-    return { ok: false, message: 'Language id inválido (no se permite Korean/0).' };
+  const { path: launcherOptionPath, parsed } = readLauncherOptionFile(gameRoot);
+  const config = loadLauncherConfig(gameRoot);
+  const customIds = config.gameLanguageIds;
+  const writeIndex =
+    customIds &&
+    typeof customIds === 'object' &&
+    Object.keys(customIds).length > 0;
+
+  let languageId = isSafeLanguageId(parsed.languageId) ? parsed.languageId : 1;
+  if (writeIndex) {
+    languageId = resolveLanguageId(gameRoot, code);
+    if (!isSafeLanguageId(languageId)) {
+      return { ok: false, message: 'Language id inválido (no se permite Korean/0).' };
+    }
+  } else if (!isSafeLanguageId(parsed.languageId) || Number(parsed.languageId) === 0) {
+    // Heal Korean/invalid index once, then leave it alone.
+    languageId = 1;
   }
 
-  const { path: launcherOptionPath, parsed } = readLauncherOptionFile(gameRoot);
-  fs.writeFileSync(
-    launcherOptionPath,
-    serializeLauncherOption({
-      ...parsed,
-      languageId,
-    }),
-    'utf8',
-  );
+  if (Number(parsed.languageId) !== Number(languageId)) {
+    fs.writeFileSync(
+      launcherOptionPath,
+      serializeLauncherOption({
+        ...parsed,
+        languageId,
+      }),
+      'utf8',
+    );
+  }
 
   const reg = await writeMuLanguage(folder);
   if (!reg.ok && !reg.skipped) {
@@ -257,6 +274,7 @@ export async function setGameLanguage(languageCode, gameRoot = getGameRoot()) {
     language: code,
     languageId,
     langSelection: folder,
+    wroteLanguageIndex: Boolean(writeIndex),
     availableLanguages: listAvailableUiLanguages(gameRoot),
   };
 }
