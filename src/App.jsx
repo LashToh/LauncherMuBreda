@@ -99,9 +99,10 @@ export default function App() {
   async function handleLanguageChange(code) {
     setLanguage(code);
     setError('');
-    // Only launcher UI language — never touch client Language/LangSelection.
+    // UI chrome only — and heal in-game English (this pack breaks on Spn/Por).
     await window.mubreda?.saveLauncherConfig({ language: code });
     setConfig((prev) => ({ ...prev, language: code }));
+    await window.mubreda?.ensureGameEnglish?.();
   }
 
   async function handleSaveSettings() {

@@ -20,7 +20,7 @@ export default {
   music: 'Música',
   resolution: 'Resolução',
   windowMode: 'Modo janela',
-  language: 'Idioma',
+  language: 'Idioma da interface',
   save: 'Salvar',
   close: 'Fechar',
   website: 'Site',

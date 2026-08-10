@@ -122,6 +122,18 @@ function registerIpc() {
   ipcMain.handle('settings:save', async (_e, partial) => saveGameSettings(partial || {}));
   ipcMain.handle('config:save', async (_e, partial) => saveLauncherConfig(partial || {}));
 
+  // Always English in-game. Used when UI language buttons change (heal only).
+  ipcMain.handle('game:ensureEnglish', async () => {
+    try {
+      return await setGameLanguage('en');
+    } catch (error) {
+      return {
+        ok: false,
+        message: error?.message || 'No se pudo forzar Language:0 / Eng.',
+      };
+    }
+  });
+
   ipcMain.handle('game:launch', async () => {
     try {
       return await launchGame();
