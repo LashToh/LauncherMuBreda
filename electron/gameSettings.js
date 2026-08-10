@@ -23,7 +23,7 @@ function parseLauncherOption(raw) {
   const settings = {
     resolutionIndex: 8,
     windowMode: true,
-    languageId: 1,
+    languageId: 0,
     id: '',
   };
 
@@ -52,8 +52,9 @@ function parseLauncherOption(raw) {
 
 function serializeLauncherOption(settings) {
   let languageId = Number(settings.languageId);
+  // 0 = English on this client — never coerce it away.
   if (!isSafeLanguageId(languageId)) {
-    languageId = 1;
+    languageId = 0;
   }
 
   return [
@@ -110,7 +111,7 @@ function readLauncherOptionFile(gameRoot) {
   return {
     path: launcherOptionPath,
     parsed: parseLauncherOption(
-      raw || 'DevModeIndex:8\nWindowMode:1\nID:\nLanguage:1\n',
+      raw || 'DevModeIndex:8\nWindowMode:1\nID:\nLanguage:0\n',
     ),
   };
 }
@@ -145,10 +146,10 @@ export async function loadGameSettings(gameRoot = getGameRoot()) {
     registryResolution != null ? registryResolution : launcherOption.resolutionIndex;
 
   const fromRegistry = detectLanguageCodeFromSelection(registryLang);
-  const language = fromRegistry || 'es';
+  const language = fromRegistry || 'en';
   const languageId = isSafeLanguageId(launcherOption.languageId)
     ? launcherOption.languageId
-    : 1;
+    : 0;
 
   return {
     soundOn: option.soundOn,
@@ -171,7 +172,7 @@ export async function saveGameSettings(partial, gameRoot = getGameRoot()) {
   if (partial.languageId !== undefined && isSafeLanguageId(partial.languageId)) {
     next.languageId = partial.languageId;
   } else {
-    next.languageId = isSafeLanguageId(current.languageId) ? current.languageId : 1;
+    next.languageId = isSafeLanguageId(current.languageId) ? current.languageId : 0;
   }
 
   if (partial.language) {
@@ -207,11 +208,10 @@ export async function saveGameSettings(partial, gameRoot = getGameRoot()) {
 }
 
 /**
- * Change game + launcher language.
- * This MuDevs client needs ALL of these aligned:
- * - LauncherOption.if Language: 1=Eng, 2=Por, 3=Spn (0=Kor — never use)
- * - Registry LangSelection = Eng|Por|Spn
- * - Registry LauncherLang = English|Portuguese|Spanish
+ * Change game + launcher language for this MuDevs S21 client:
+ * - LauncherOption.if Language: 0=Eng, 1=Spn, 2=Por
+ * - Registry LangSelection = Eng|Spn|Por
+ * - Registry LauncherLang = English|Spanish|Portuguese
  */
 export async function setGameLanguage(languageCode, gameRoot = getGameRoot()) {
   const code = String(languageCode || '').toLowerCase();
@@ -232,7 +232,7 @@ export async function setGameLanguage(languageCode, gameRoot = getGameRoot()) {
 
   const languageId = resolveLanguageId(gameRoot, code);
   if (!isSafeLanguageId(languageId)) {
-    return { ok: false, message: 'Language id inválido (no se permite Korean/0).' };
+    return { ok: false, message: 'Language id inválido.' };
   }
 
   const { path: launcherOptionPath, parsed } = readLauncherOptionFile(gameRoot);
@@ -266,37 +266,18 @@ export async function setGameLanguage(languageCode, gameRoot = getGameRoot()) {
 }
 
 /**
- * Force client language keys back in sync.
- * Repairs Korean (0/Kor) and Language↔LangSelection mismatches.
+ * Heal only when LangSelection points at Korean folder, or Language is invalid.
+ * Language:0 is English — never treat it as broken.
  */
 export async function repairGameLanguage(gameRoot = getGameRoot()) {
   const { path: launcherOptionPath, parsed } = readLauncherOptionFile(gameRoot);
   const currentSelection = await readMuLanguage();
   const fromSelection = detectLanguageCodeFromSelection(currentSelection);
 
-  const indexBroken =
-    !isSafeLanguageId(parsed.languageId) || Number(parsed.languageId) === 0;
+  const indexBroken = !isSafeLanguageId(parsed.languageId);
   const selectionBroken = !currentSelection || /^kor/i.test(currentSelection);
 
-  let code = fromSelection;
-  if (!code || selectionBroken) {
-    // Prefer Spanish for Breda if Local\\Spn exists.
-    code = resolveLangSelection(gameRoot, 'es', { requireFolder: true })
-      ? 'es'
-      : 'en';
-  }
-
-  const expectedId = resolveLanguageId(gameRoot, code);
-  const expectedFolder =
-    resolveLangSelection(gameRoot, code, { requireFolder: true }) ||
-    resolveLangSelection(gameRoot, code);
-
-  const mismatched =
-    !fromSelection ||
-    fromSelection !== code ||
-    Number(parsed.languageId) !== Number(expectedId);
-
-  if (!indexBroken && !selectionBroken && !mismatched) {
+  if (!indexBroken && !selectionBroken) {
     return {
       ok: true,
       repaired: false,
@@ -304,6 +285,16 @@ export async function repairGameLanguage(gameRoot = getGameRoot()) {
       langSelection: currentSelection,
     };
   }
+
+  let code = fromSelection;
+  if (!code || selectionBroken) {
+    code = 'en';
+  }
+
+  const expectedId = resolveLanguageId(gameRoot, code);
+  const expectedFolder =
+    resolveLangSelection(gameRoot, code, { requireFolder: true }) ||
+    resolveLangSelection(gameRoot, code);
 
   fs.writeFileSync(
     launcherOptionPath,

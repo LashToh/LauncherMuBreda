@@ -1,14 +1,16 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Repair MU Breda Season 21 client so English works (fixes Skill(Kor)).
+  Restore working English on MU Breda Season 21 after bad launcher language writes.
 
 .DESCRIPTION
-  Copies newer skill BMDs from Data\Local\Eng (fallback Spn/Por) over outdated
-  Data\Local root files, then sets:
-    - LauncherOption.if Language:1
-    - Registry LangSelection = Eng
-    - Registry LauncherLang = English
+  Earlier launcher builds wrongly treated Language:0 as Korean and rewrote it to 1,
+  and may have copied Eng\Skill.bmd over Data\Local\skill.bmd.
+
+  This script:
+  1. Restores skill BMD backups from Data\Local\_mubreda_backup\ (newest first)
+  2. Sets LauncherOption.if Language:0 (English on this client)
+  3. Sets registry LangSelection=Eng, LauncherLang=English
 
 .PARAMETER GameRoot
   Folder that contains Main.exe.
@@ -24,7 +26,7 @@ function Resolve-ExistingFile {
   param([string]$Dir, [string[]]$Names)
   if (-not (Test-Path -LiteralPath $Dir)) { return $null }
   $map = @{}
-  Get-ChildItem -LiteralPath $Dir -File | ForEach-Object {
+  Get-ChildItem -LiteralPath $Dir -File -ErrorAction SilentlyContinue | ForEach-Object {
     $map[$_.Name.ToLowerInvariant()] = $_.FullName
   }
   foreach ($name in $Names) {
@@ -44,70 +46,26 @@ if (-not $main) {
 }
 
 $localDir = Join-Path $GameRoot "Data\Local"
-if (-not (Test-Path -LiteralPath $localDir)) {
-  Write-Error "Missing Data\Local in: $GameRoot"
-}
+$backupRoot = Join-Path $localDir "_mubreda_backup"
 
-$pairs = @(
-  @{ Root = @("skill.bmd", "Skill.bmd"); Lang = @("Skill.bmd", "skill.bmd") },
-  @{ Root = @("SkillTooltipText.bmd", "skilltooltiptext.bmd"); Lang = @("SkillTooltipText.bmd", "skilltooltiptext.bmd") },
-  @{ Root = @("masterskilltreedata.bmd", "MasterSkillTreeData.bmd"); Lang = @("MasterSkillTreeData.bmd", "masterskilltreedata.bmd") },
-  @{ Root = @("masterskilltooltip.bmd", "MasterSkillTooltip.bmd"); Lang = @("MasterSkillTooltip.bmd", "masterskilltooltip.bmd") },
-  @{ Root = @("monsterskill.bmd", "MonsterSkill.bmd"); Lang = @("MonsterSkill.bmd", "monsterskill.bmd") }
-)
-
-$langFolders = @("Eng", "ENG", "Spn", "SPN", "Por", "POR")
-$stamp = Get-Date -Format "yyyy-MM-ddTHH-mm-ss"
-$backupDir = Join-Path $localDir "_mubreda_backup\$stamp"
-$copied = @()
-
-foreach ($pair in $pairs) {
-  $source = $null
-  $sourceFolder = $null
-  foreach ($folder in $langFolders) {
-    $langPath = Join-Path $localDir $folder
-    $hit = Resolve-ExistingFile -Dir $langPath -Names $pair.Lang
-    if ($hit) {
-      $source = $hit
-      $sourceFolder = $folder
-      break
+# Restore newest skill backups if present (undo accidental Eng→Local copies).
+if (Test-Path -LiteralPath $backupRoot) {
+  $latest = Get-ChildItem -LiteralPath $backupRoot -Directory |
+    Sort-Object Name -Descending |
+    Select-Object -First 1
+  if ($latest) {
+    Write-Host "Restoring skill backup from: $($latest.FullName)"
+    Get-ChildItem -LiteralPath $latest.FullName -File | ForEach-Object {
+      $dest = Join-Path $localDir $_.Name
+      Copy-Item -LiteralPath $_.FullName -Destination $dest -Force
+      Write-Host "RESTORED: $($_.Name)"
     }
   }
-
-  if (-not $source) {
-    Write-Host "SKIP (no lang copy): $($pair.Root[0])"
-    continue
-  }
-
-  $dest = Resolve-ExistingFile -Dir $localDir -Names $pair.Root
-  if (-not $dest) {
-    $dest = Join-Path $localDir $pair.Root[0]
-  }
-
-  $needCopy = $true
-  if (Test-Path -LiteralPath $dest) {
-    $d = Get-Item -LiteralPath $dest
-    $s = Get-Item -LiteralPath $source
-    if ($d.Length -eq $s.Length -and $d.LastWriteTime -ge $s.LastWriteTime.AddSeconds(-1)) {
-      $needCopy = $false
-    }
-  }
-
-  if (-not $needCopy) {
-    Write-Host "OK up-to-date: $(Split-Path $dest -Leaf)"
-    continue
-  }
-
-  New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
-  if (Test-Path -LiteralPath $dest) {
-    Copy-Item -LiteralPath $dest -Destination (Join-Path $backupDir (Split-Path $dest -Leaf)) -Force
-  }
-  Copy-Item -LiteralPath $source -Destination $dest -Force
-  $copied += "$(Split-Path $dest -Leaf) <= $sourceFolder"
-  Write-Host "COPIED: $(Split-Path $dest -Leaf) from $sourceFolder"
+} else {
+  Write-Host "No _mubreda_backup folder — skill files left as-is."
 }
 
-# LauncherOption.if -> Language:1 (English)
+# LauncherOption.if -> Language:0 (English on this MuDevs S21 client)
 $optPath = Join-Path $GameRoot "LauncherOption.if"
 $lines = @()
 if (Test-Path -LiteralPath $optPath) {
@@ -117,7 +75,7 @@ $out = @()
 $sawLang = $false
 foreach ($line in $lines) {
   if ($line -match '^\s*Language\s*:') {
-    $out += "Language:1"
+    $out += "Language:0"
     $sawLang = $true
   } else {
     $out += $line
@@ -125,15 +83,14 @@ foreach ($line in $lines) {
 }
 if (-not $sawLang) {
   if ($out.Count -eq 0) {
-    $out = @("DevModeIndex:8", "WindowMode:1", "ID:", "Language:1")
+    $out = @("DevModeIndex:8", "WindowMode:1", "ID:", "Language:0")
   } else {
-    $out += "Language:1"
+    $out += "Language:0"
   }
 }
 Set-Content -LiteralPath $optPath -Value $out -Encoding ASCII
-Write-Host "Wrote Language:1 -> $optPath"
+Write-Host "Wrote Language:0 (English) -> $optPath"
 
-# Registry language keys
 $regPath = "HKCU:\Software\Webzen\Mu\Config"
 if (-not (Test-Path -LiteralPath $regPath)) {
   New-Item -Path $regPath -Force | Out-Null
@@ -143,6 +100,4 @@ Set-ItemProperty -Path $regPath -Name "LauncherLang" -Value "English" -Type Stri
 Write-Host "Registry LangSelection=Eng, LauncherLang=English"
 
 Write-Host ""
-Write-Host "Done. Copied $($copied.Count) skill file(s)."
-Write-Host "Start Main.exe once to verify English / no Skill(Kor)."
-Write-Host "Backup (if any): $backupDir"
+Write-Host "Done. Start Main.exe once to verify English works again."

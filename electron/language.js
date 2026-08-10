@@ -4,7 +4,7 @@ import { loadLauncherConfig } from './configStore.js';
 
 /**
  * Prefer exact client Local folder names when present.
- * Never select Korean for Breda (ES/EN/PT).
+ * Never select Korean Local folder (Kor) for Breda (ES/EN/PT).
  */
 const CODE_TO_FOLDER_CANDIDATES = {
   en: ['Eng', 'ENG', 'English', 'en'],
@@ -18,11 +18,16 @@ const FOLDER_TO_CODE = Object.fromEntries(
   ),
 );
 
-/** Default MuDevs indexes with Korean reserved at 0. Overridable via config. */
+/**
+ * MuDevs Resolution Changer / LauncherOption.if Language: indexes
+ * for this Season 21 client (confirmed working before launcher "fixes"):
+ *   0 = English, 1 = Spanish, 2 = Portuguese
+ * Do NOT treat 0 as Korean — Skill(Kor) text is a hardcoded client error string.
+ */
 const DEFAULT_GAME_LANGUAGE_IDS = {
-  en: 1,
+  en: 0,
+  es: 1,
   pt: 2,
-  es: 3,
 };
 
 export function listLocalFolders(gameRoot) {
@@ -63,24 +68,33 @@ export function detectLanguageCodeFromSelection(selection) {
 
 export function getGameLanguageIds(gameRoot) {
   const config = loadLauncherConfig(gameRoot);
-  return {
-    ...DEFAULT_GAME_LANGUAGE_IDS,
-    ...(config.gameLanguageIds || {}),
-  };
+  const custom = config.gameLanguageIds;
+  // Ignore broken maps we briefly shipped (en:1 / es:3). English is 0 here.
+  if (
+    custom &&
+    typeof custom === 'object' &&
+    Number(custom.en) === 0 &&
+    Number(custom.es) >= 0 &&
+    Number(custom.pt) >= 0
+  ) {
+    return { ...DEFAULT_GAME_LANGUAGE_IDS, ...custom };
+  }
+  return { ...DEFAULT_GAME_LANGUAGE_IDS };
 }
 
 export function resolveLanguageId(gameRoot, languageCode) {
   const map = getGameLanguageIds(gameRoot);
   const id = Number(map[languageCode]);
-  if (!Number.isFinite(id) || id <= 0) {
-    return DEFAULT_GAME_LANGUAGE_IDS[languageCode] || 1;
+  // 0 is valid (English). Only fall back when missing/invalid.
+  if (!Number.isFinite(id) || id < 0) {
+    return DEFAULT_GAME_LANGUAGE_IDS[languageCode] ?? 0;
   }
   return id;
 }
 
 export function isSafeLanguageId(languageId) {
   const n = Number(languageId);
-  return Number.isFinite(n) && n > 0;
+  return Number.isFinite(n) && n >= 0;
 }
 
 export function listAvailableUiLanguages(gameRoot) {

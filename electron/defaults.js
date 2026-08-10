@@ -25,14 +25,16 @@ export const RESOLUTIONS = [
 ];
 
 /**
- * Display mapping only. Game client language is repaired separately and is
- * NOT rewritten when switching launcher UI language (avoids Skill(Kor) spam).
+ * LauncherOption.if Language: indexes for this MuDevs S21 client.
+ * 0 = English (working default) — NOT Korean.
+ * 1 = Spanish, 2 = Portuguese.
+ * ES/EN/PT UI buttons do not rewrite these (UI chrome only).
  */
 export const GAME_LANGUAGES = [
-  { id: 1, code: 'en', label: 'English' },
+  { id: 0, code: 'en', label: 'English' },
+  { id: 1, code: 'es', label: 'Spanish' },
   { id: 2, code: 'pt', label: 'Portuguese' },
-  { id: 3, code: 'es', label: 'Spanish' },
 ];
 
-export const UI_TO_GAME_LANG = { en: 1, pt: 2, es: 3 };
-export const GAME_TO_UI_LANG = { 1: 'en', 2: 'pt', 3: 'es' };
+export const UI_TO_GAME_LANG = { en: 0, es: 1, pt: 2 };
+export const GAME_TO_UI_LANG = { 0: 'en', 1: 'es', 2: 'pt' };

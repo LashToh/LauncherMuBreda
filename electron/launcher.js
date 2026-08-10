@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { shell } from 'electron';
-import { prepareEnglishClient } from './clientRepair.js';
 import { loadLauncherConfig } from './configStore.js';
+import { setGameLanguage } from './gameSettings.js';
 import { getGameRoot } from './paths.js';
 
 /** Resolve Main.exe / main.exe with the real casing from disk. */
@@ -62,28 +62,15 @@ export async function launchGame(gameRoot = getGameRoot()) {
     };
   }
 
-  // Outdated Data\\Local\\skill.bmd causes Skill(Kor) popups; Eng pack has S21 data.
-  // Also align Language / LangSelection / LauncherLang to English before Main.exe.
-  let repair = null;
+  // This MuDevs client uses Language:0 = English (not Korean).
+  // Earlier launcher builds rewrote that to Language:1 and broke EN — put it back.
+  let language = null;
   try {
-    repair = await prepareEnglishClient(gameRoot);
+    language = await setGameLanguage('en', gameRoot);
   } catch (error) {
-    repair = {
+    language = {
       ok: false,
-      message: error?.message || 'No se pudo reparar datos de idioma/skills.',
-    };
-  }
-
-  if (repair && repair.ok === false && repair.skill?.ok === false) {
-    return {
-      ok: false,
-      code: 'CLIENT_REPAIR_FAILED',
-      gameRoot,
-      exe: gameExe,
-      repair,
-      message:
-        repair.message ||
-        'No se pudo reparar skill.bmd / idioma inglés del cliente.',
+      message: error?.message || 'No se pudo restaurar Language:0 / LangSelection=Eng.',
     };
   }
 
@@ -96,7 +83,7 @@ export async function launchGame(gameRoot = getGameRoot()) {
         code: 'LAUNCHED',
         exe: gameExe,
         method: 'openPath',
-        repair,
+        language,
       };
     }
   } catch {
@@ -110,7 +97,7 @@ export async function launchGame(gameRoot = getGameRoot()) {
       code: 'LAUNCHED',
       exe: gameExe,
       method: 'cmd-start',
-      repair,
+      language,
     };
   }
 
@@ -119,7 +106,7 @@ export async function launchGame(gameRoot = getGameRoot()) {
     code: 'LAUNCH_EACCES',
     gameRoot,
     exe: gameExe,
-    repair,
+    language,
     message:
       `No se pudo abrir Main.exe (permiso denegado).\n\n` +
       `Probá:\n` +
