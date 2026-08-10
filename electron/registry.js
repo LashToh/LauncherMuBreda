@@ -5,6 +5,12 @@ import { RESOLUTIONS } from './defaults.js';
 const execFileAsync = promisify(execFile);
 const REG_KEY = 'HKCU\\Software\\Webzen\\Mu\\Config';
 
+const LAUNCHER_LANG_NAMES = {
+  Eng: 'English',
+  Spn: 'Spanish',
+  Por: 'Portuguese',
+};
+
 export function resolutionRegistryValue(resolutionIndex) {
   const match = RESOLUTIONS.find((item) => item.index === Number(resolutionIndex));
   return match?.registry ?? Number(resolutionIndex);
@@ -38,7 +44,11 @@ export async function writeMuResolution(resolutionIndex) {
   }
 }
 
-/** @param {string} selection Folder/registry value such as Eng, Spn, Por */
+/**
+ * Keep Webzen language keys in sync:
+ * - LangSelection = Eng|Spn|Por (Data\\Local folder)
+ * - LauncherLang = English|Spanish|Portuguese
+ */
 export async function writeMuLanguage(selection) {
   if (process.platform !== 'win32') {
     return { ok: true, skipped: true, reason: 'NOT_WINDOWS' };
@@ -49,11 +59,21 @@ export async function writeMuLanguage(selection) {
     return { ok: false, message: 'Refusing to write Korean LangSelection' };
   }
 
+  const launcherLang =
+    LAUNCHER_LANG_NAMES[value] ||
+    LAUNCHER_LANG_NAMES[
+      Object.keys(LAUNCHER_LANG_NAMES).find(
+        (key) => key.toLowerCase() === value.toLowerCase(),
+      )
+    ] ||
+    value;
+
   try {
     await regAdd('LangSelection', 'REG_SZ', value);
-    return { ok: true, value };
+    await regAdd('LauncherLang', 'REG_SZ', launcherLang);
+    return { ok: true, value, launcherLang };
   } catch (error) {
-    return { ok: false, message: error.message, value };
+    return { ok: false, message: error.message, value, launcherLang };
   }
 }
 

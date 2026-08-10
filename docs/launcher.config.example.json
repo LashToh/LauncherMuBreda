@@ -6,5 +6,10 @@
   "facebookUrl": "https://www.facebook.com/mubredaonline/",
   "bootstrapExe": "main.exe",
   "language": "es",
-  "allowPlayWithoutUpdate": true
+  "allowPlayWithoutUpdate": true,
+  "gameLanguageIds": {
+    "en": 1,
+    "pt": 2,
+    "es": 3
+  }
 }
