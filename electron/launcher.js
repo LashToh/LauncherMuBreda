@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { shell } from 'electron';
+import { prepareEnglishClient } from './clientRepair.js';
 import { loadLauncherConfig } from './configStore.js';
 import { getGameRoot } from './paths.js';
 
@@ -61,6 +62,31 @@ export async function launchGame(gameRoot = getGameRoot()) {
     };
   }
 
+  // Outdated Data\\Local\\skill.bmd causes Skill(Kor) popups; Eng pack has S21 data.
+  // Also align Language / LangSelection / LauncherLang to English before Main.exe.
+  let repair = null;
+  try {
+    repair = await prepareEnglishClient(gameRoot);
+  } catch (error) {
+    repair = {
+      ok: false,
+      message: error?.message || 'No se pudo reparar datos de idioma/skills.',
+    };
+  }
+
+  if (repair && repair.ok === false && repair.skill?.ok === false) {
+    return {
+      ok: false,
+      code: 'CLIENT_REPAIR_FAILED',
+      gameRoot,
+      exe: gameExe,
+      repair,
+      message:
+        repair.message ||
+        'No se pudo reparar skill.bmd / idioma inglés del cliente.',
+    };
+  }
+
   // Prefer Electron shell.openPath (handles permissions / associations better on Windows).
   try {
     const openError = await shell.openPath(gameExe);
@@ -70,6 +96,7 @@ export async function launchGame(gameRoot = getGameRoot()) {
         code: 'LAUNCHED',
         exe: gameExe,
         method: 'openPath',
+        repair,
       };
     }
   } catch {
@@ -83,6 +110,7 @@ export async function launchGame(gameRoot = getGameRoot()) {
       code: 'LAUNCHED',
       exe: gameExe,
       method: 'cmd-start',
+      repair,
     };
   }
 
@@ -91,6 +119,7 @@ export async function launchGame(gameRoot = getGameRoot()) {
     code: 'LAUNCH_EACCES',
     gameRoot,
     exe: gameExe,
+    repair,
     message:
       `No se pudo abrir Main.exe (permiso denegado).\n\n` +
       `Probá:\n` +
