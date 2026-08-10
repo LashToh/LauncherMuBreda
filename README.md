@@ -9,8 +9,8 @@ Visual identity matches [CMSMuBreda](https://github.com/LashToh/CMSMuBreda).
 - Hero Play UI (Season 21 crimson/gold)
 - **Play** launches `main.exe` directly from the client folder
 - Settings: sound, music, resolution, window mode
-- Language buttons **ES / EN / PT** change **launcher UI only**
-- In-game language is **locked to English** (`Language:0` + `LangSelection=Eng`) — Spn/Por break this client pack
+- In-game language is **locked to English** (`Language:0` + `LangSelection=Eng`)
+- No ES/EN/PT language switch in the UI (Spn/Por break this client pack)
 - News + server status from `https://api.mubreda.net`
 - Social links (website / Discord / Instagram / Facebook)
 - Client auto-update (Play still allowed if API is down)
@@ -92,9 +92,9 @@ This Breda Season 21 client pack **only works in English in-game**. Switching Sp
 
 The launcher:
 
-- keeps ES/EN/PT for **UI chrome only**
-- always writes `Language:0` + `LangSelection=Eng` on Play / settings save
-- refuses to set the game client to Spanish or Portuguese
+- has **no** ES/EN/PT language switch (removed — it kept breaking the game client)
+- always writes `Language:0` + `LangSelection=Eng` on Play / boot / settings save
+- ships `fix-english.bat` in the client drop-in folder
 
 **If English broke** (often `Language:1` + `LangSelection=Eng` from an old launcher), run either:
 

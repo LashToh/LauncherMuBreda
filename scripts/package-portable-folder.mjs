@@ -61,6 +61,12 @@ if (path.resolve(appSource) !== path.resolve(appTarget)) {
 // Stub stays loose next to Main.exe
 fs.copyFileSync(stubSrc, path.join(dropinDir, 'MuBreda-Launcher.exe'));
 
+// Quick recovery if Language: gets rewritten away from English.
+const fixBat = path.join(root, 'scripts', 'fix-english.bat');
+if (fs.existsSync(fixBat)) {
+  fs.copyFileSync(fixBat, path.join(dropinDir, 'fix-english.bat'));
+}
+
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const zipName = `MuBreda-Launcher-${pkg.version}-client-dropin.zip`;
 const zipPath = path.join(releaseDir, zipName);

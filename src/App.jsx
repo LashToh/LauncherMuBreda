@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FiSettings } from 'react-icons/fi';
-import LanguageSwitch from './components/LanguageSwitch/LanguageSwitch';
 import NewsPanel from './components/NewsPanel/NewsPanel';
 import ServerStatus from './components/ServerStatus/ServerStatus';
 import SettingsModal from './components/SettingsModal/SettingsModal';
@@ -20,6 +19,8 @@ export default function App() {
   const [config, setConfig] = useState(FALLBACK_CONFIG);
   const [settings, setSettings] = useState(FALLBACK_SETTINGS);
   const [resolutions, setResolutions] = useState(FALLBACK_RESOLUTIONS);
+  // Launcher UI strings only. No ES/EN/PT switch — this Breda pack breaks
+  // if the game client leaves English (old builds rewrote Language on click).
   const [language, setLanguage] = useState('es');
   const [news, setNews] = useState([]);
   const [server, setServer] = useState(null);
@@ -95,15 +96,6 @@ export default function App() {
     boot();
     return () => unsubscribe();
   }, []);
-
-  async function handleLanguageChange(code) {
-    setLanguage(code);
-    setError('');
-    // UI chrome only — and heal in-game English (this pack breaks on Spn/Por).
-    await window.mubreda?.saveLauncherConfig({ language: code });
-    setConfig((prev) => ({ ...prev, language: code }));
-    await window.mubreda?.ensureGameEnglish?.();
-  }
 
   async function handleSaveSettings() {
     const saved = await window.mubreda?.saveGameSettings(draft);
@@ -196,7 +188,6 @@ export default function App() {
         </div>
 
         <aside className="launcher__right">
-          <LanguageSwitch value={language} onChange={handleLanguageChange} />
           <div className="launcher__news">
             <NewsPanel t={t} items={news} />
           </div>
