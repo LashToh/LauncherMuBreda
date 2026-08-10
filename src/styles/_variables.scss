@@ -1,0 +1,35 @@
+$color-bg-deep: #090909;
+$color-bg-dark: #121212;
+$color-bg-crimson: #1b0000;
+$color-red-dark: #6d0000;
+$color-red-bright: #c61717;
+$color-gold: #f0d08a;
+
+$font-display: 'Cinzel', serif;
+$font-body: 'Cormorant Garamond', serif;
+
+$radius-sm: 4px;
+$radius-md: 8px;
+
+$transition-fast: 0.2s ease;
+$transition-base: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+$glass-bg: rgba(18, 18, 18, 0.65);
+$glass-border: rgba(240, 208, 138, 0.12);
+$glow-red: 0 0 40px rgba(198, 23, 23, 0.45);
+$glow-gold: 0 0 30px rgba(240, 208, 138, 0.25);
+
+@mixin glass-panel {
+  background: $glass-bg;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid $glass-border;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+@mixin gold-text-gradient {
+  background: linear-gradient(135deg, $color-gold 0%, #fff5dc 50%, $color-gold 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

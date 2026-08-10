@@ -1,0 +1,10 @@
+{
+  "apiUrl": "https://api.mubreda.net",
+  "websiteUrl": "https://mubreda.net",
+  "discordUrl": "https://discord.gg/SV6yW7XK7",
+  "instagramUrl": "https://www.instagram.com/mubredaonline/",
+  "facebookUrl": "https://www.facebook.com/mubredaonline/",
+  "bootstrapExe": "main.exe",
+  "language": "es",
+  "allowPlayWithoutUpdate": true
+}

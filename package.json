@@ -1,0 +1,76 @@
+{
+  "name": "launcher-mubreda",
+  "version": "1.0.9",
+  "private": true,
+  "description": "MU Breda Season 21 — Premium desktop launcher",
+  "main": "electron/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && ELECTRON_DEV=1 electron .\"",
+    "dev:renderer": "vite",
+    "icons": "node scripts/generate-icons.mjs",
+    "stub": "node scripts/build-stub.mjs",
+    "build": "npm run icons && vite build",
+    "start": "electron .",
+    "pack": "npm run build && npm run stub && electron-builder --win dir && node scripts/package-portable-folder.mjs",
+    "dist": "npm run build && npm run stub && electron-builder --win dir && node scripts/package-portable-folder.mjs",
+    "dist:installer": "npm run build && electron-builder --win nsis",
+    "dist:single": "npm run build && electron-builder --win portable",
+    "check": "node --check electron/main.js",
+    "test:smoke": "electron electron/smoke-test.js"
+  },
+  "build": {
+    "appId": "net.mubreda.launcher",
+    "productName": "MU Breda Launcher",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "icon": "icon.ico",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "build/icon.ico",
+      "build/icon.png",
+      "public/assets/icon.ico",
+      "public/assets/favicon.ico",
+      "public/assets/favicon.png",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "dir"
+      ],
+      "icon": "icon.ico",
+      "executableName": "MuBreda-Launcher-App",
+      "artifactName": "MuBreda-Launcher-${version}.${ext}",
+      "signAndEditExecutable": true
+    },
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false
+    },
+    "portable": {
+      "artifactName": "MuBreda-Launcher-${version}-singlefile.${ext}"
+    },
+    "extraResources": []
+  },
+  "dependencies": {
+    "@fontsource/cinzel": "^5.3.0",
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "png-to-ico": "^3.0.2",
+    "sass": "^1.83.0",
+    "sharp": "^0.35.3",
+    "vite": "^6.0.5",
+    "wait-on": "^8.0.1"
+  }
+}
