@@ -1,0 +1,60 @@
+@use '../../styles/variables' as *;
+
+.update-bar {
+  @include glass-panel;
+  width: min(420px, 100%);
+  padding: 0.7rem 0.9rem;
+  border-radius: $radius-md;
+  animation: riseIn 0.75s ease 0.16s both;
+
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.98rem;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  &__action {
+    padding: 0.35rem 0.75rem;
+    border-radius: $radius-sm;
+    background: rgba(198, 23, 23, 0.9);
+    font-family: $font-display;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $color-red-bright;
+    }
+  }
+
+  &__track {
+    margin-top: 0.55rem;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    background: linear-gradient(90deg, $color-red-dark, $color-red-bright, $color-gold);
+    transition: width 0.25s ease;
+  }
+
+  &.is-checking .update-bar__fill {
+    animation: indeterminate 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes indeterminate {
+  0% {
+    transform: translateX(-60%);
+  }
+  100% {
+    transform: translateX(180%);
+  }
+}
