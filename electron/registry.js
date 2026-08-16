@@ -55,9 +55,18 @@ export async function writeMuLanguage(languageCode) {
     return { ok: false, message: `Unsupported language: ${languageCode}` };
   }
 
+  const launcherLang = {
+    Eng: 'English',
+    Spn: 'Spanish',
+    Por: 'Portuguese',
+  }[selection];
+
   try {
     await regAdd('LangSelection', 'REG_SZ', selection);
-    return { ok: true, value: selection };
+    if (launcherLang) {
+      await regAdd('LauncherLang', 'REG_SZ', launcherLang);
+    }
+    return { ok: true, value: selection, launcherLang };
   } catch (error) {
     return { ok: false, message: error.message, value: selection };
   }

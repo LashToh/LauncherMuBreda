@@ -19,7 +19,7 @@ function parseLauncherOption(raw) {
   const settings = {
     resolutionIndex: 8,
     windowMode: true,
-    languageId: 2, // Spanish default — never Korean (0)
+    languageId: 1, // Spanish default for Breda
     id: '',
   };
 
@@ -38,7 +38,7 @@ function parseLauncherOption(raw) {
     if (key === 'WindowMode') settings.windowMode = value === '1';
     if (key === 'Language') {
       const n = Number(value);
-      // Keep explicit 0 if present on disk, but launcher UI won't map it.
+      // 0 = English is valid on this client.
       if (Number.isFinite(n)) settings.languageId = n;
     }
     if (key === 'ID') settings.id = value;
@@ -48,9 +48,9 @@ function parseLauncherOption(raw) {
 }
 
 function serializeLauncherOption(settings) {
-  // Guard: never persist Korean (0) from launcher-managed saves.
   let languageId = Number(settings.languageId);
-  if (!Number.isFinite(languageId) || languageId === 0) {
+  // 0 (English) is valid — only reject NaN / negative.
+  if (!Number.isFinite(languageId) || languageId < 0) {
     languageId = UI_TO_GAME_LANG.es;
   }
 
@@ -101,6 +101,7 @@ function serializeOptionIni(settings) {
 }
 
 function resolveUiLanguage(languageId, registryLang) {
+  // readMuLanguage() already returns en/es/pt when possible.
   if (registryLang && UI_TO_GAME_LANG[registryLang] !== undefined) {
     return registryLang;
   }
@@ -117,7 +118,7 @@ export async function loadGameSettings(gameRoot = getGameRoot()) {
 
   const launcherOption = fs.existsSync(launcherOptionPath)
     ? parseLauncherOption(fs.readFileSync(launcherOptionPath, 'utf8'))
-    : parseLauncherOption('DevModeIndex:8\nWindowMode:1\nID:\nLanguage:2\n');
+    : parseLauncherOption('DevModeIndex:8\nWindowMode:1\nID:\nLanguage:1\n');
 
   let registryResolution = null;
   let registryLang = null;
@@ -141,8 +142,7 @@ export async function loadGameSettings(gameRoot = getGameRoot()) {
     registryResolution != null ? registryResolution : launcherOption.resolutionIndex;
 
   let languageId = launcherOption.languageId;
-  if (languageId === 0) {
-    // Migrate away from Korean index left by older launcher builds.
+  if (!Number.isFinite(Number(languageId)) || Number(languageId) < 0) {
     languageId = UI_TO_GAME_LANG.es;
   }
 
@@ -184,9 +184,9 @@ export async function saveGameSettings(partial, gameRoot = getGameRoot()) {
     next.language = GAME_TO_UI_LANG[partial.languageId] || next.language;
   }
 
-  // Never persist Korean (0).
-  if (!next.languageId || next.languageId === 0) {
-    next.languageId = UI_TO_GAME_LANG[next.language] || UI_TO_GAME_LANG.es;
+  // 0 = English is valid. Only heal missing / negative ids.
+  if (!Number.isFinite(Number(next.languageId)) || Number(next.languageId) < 0) {
+    next.languageId = UI_TO_GAME_LANG[next.language] ?? UI_TO_GAME_LANG.es;
   }
 
   fs.writeFileSync(
