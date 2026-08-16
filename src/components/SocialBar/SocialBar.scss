@@ -1,0 +1,35 @@
+@use '../../styles/variables' as *;
+
+.social-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  animation: riseIn 0.8s ease 0.12s both;
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: $radius-sm;
+    border: 1px solid $glass-border;
+    background: rgba(9, 9, 9, 0.45);
+    color: rgba(255, 255, 255, 0.78);
+    font-family: $font-display;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: border-color $transition-fast, color $transition-fast, background $transition-fast;
+
+    svg {
+      font-size: 0.9rem;
+    }
+
+    &:hover {
+      border-color: rgba(240, 208, 138, 0.45);
+      color: $color-gold;
+      background: rgba(27, 0, 0, 0.55);
+    }
+
+  }
+}

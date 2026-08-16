@@ -1,0 +1,117 @@
+@use '../../styles/variables' as *;
+
+.settings-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+
+  &__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  &__panel {
+    position: relative;
+    width: 420px;
+    @include glass-panel;
+    border-radius: $radius-md;
+    padding: 1.1rem 1.2rem 1.2rem;
+    animation: riseIn 0.35s ease both;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+
+    h2 {
+      font-family: $font-display;
+      font-size: 0.9rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: $color-gold;
+    }
+
+    button {
+      width: 32px;
+      height: 32px;
+      font-size: 1.4rem;
+      color: rgba(255, 255, 255, 0.7);
+
+      &:hover {
+        color: #fff;
+      }
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-family: $font-display;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.65);
+
+    &--wide {
+      grid-column: 1 / -1;
+    }
+
+    select {
+      height: 40px;
+      border-radius: $radius-sm;
+      border: 1px solid $glass-border;
+      background: rgba(9, 9, 9, 0.7);
+      color: #fff;
+      padding: 0 0.7rem;
+      font-family: $font-body;
+      font-size: 1rem;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+  }
+
+  &__toggle {
+    height: 40px;
+    border-radius: $radius-sm;
+    border: 1px solid $glass-border;
+    background: rgba(9, 9, 9, 0.7);
+    font-family: $font-display;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+
+    &.is-on {
+      border-color: rgba(198, 23, 23, 0.55);
+      background: rgba(198, 23, 23, 0.28);
+      color: #fff;
+    }
+  }
+
+  &__footer {
+    margin-top: 1.1rem;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  &__save {
+    padding: 0.7rem 1.3rem;
+    border-radius: $radius-sm;
+    background: linear-gradient(135deg, $color-red-dark, $color-red-bright);
+    font-family: $font-display;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    box-shadow: $glow-red;
+  }
+}
